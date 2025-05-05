@@ -1,20 +1,20 @@
-# $Id: exo2.mac,v 1.3 2009-10-20 08:23:32 kurasige Exp $
+# $Id: exo1.mac,v 1.3 2009-10-20 08:23:32 kurasige Exp $
 #
 # Macro file for "generation.cc" 
 #
 # this macro can be executed 
 # during an interactive session:
 #
-# Idle> /control/execute exo2.mac
+# Idle> /control/execute exo1.mac
 # 
 #
-/N03/det/setNbOfLayers 1
+/N03/det/setNbOfLayers 8
 #
 /N03/det/setAbsMat Aluminium
-/N03/det/setAbsThick 10 cm
+/N03/det/setAbsThick  1 cm
 #
 /N03/det/setGapMat Air
-/N03/det/setGapThick  0 cm
+/N03/det/setGapThick  2 cm
 #
 /N03/det/setSizeYZ   10 cm
 #
@@ -25,11 +25,12 @@
 /process/list
 /process/inactivate msc
 /process/inactivate eBrem
-/process/inactivate phot
+/process/inactivate compt
 /process/inactivate conv
 #
-/run/setCut 10 cm
+/run/setCut 100 cm
 /run/initialize
 #
-/gun/particle gamma
-/gun/energy 10 MeV
+/gun/particle e+
+/gun/energy 100 GeV
+/vis/scene/add/axes 0 0 0 10 cm

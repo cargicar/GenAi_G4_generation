@@ -60,12 +60,16 @@ SteppingAction::~SteppingAction()
 
 //....oooOO0OOooo........oooOO0OOoooCalorGan Grid block. Begin .oooOO0OOooo........oooOO0OOooo......
 
+// Parameters based on exo0.mac. Notice that they are very different from CaloGan dataset
+//8 layers, Gap size 2cm, Abs size 1cm, YZ size 10cm
+// x len= 8*(2+1)=24, x=(-12,12), y=(-5,5), z = (-5,5)
 int SteppingAction::WhichXBin(double xpos){
-
-  //zsegmentation = TH1F("","",3,np.array([-240.,-150.,197.,240.]))
-  G4cout << "###### Xpos ###########" << xpos << G4endl; 
-  if (xpos < -150.) return 0;
-  else if (xpos < 197.) return 1;
+ 
+  //  G4cout << "###### Xpos ###########" << xpos << G4endl;
+  // Lets split the calorimeter in 3 equal spaced sections in x-dim
+  //  x=(-12,12), zsegmentation = [-12, -8, 8, 12]
+  if (xpos < -8.) return 0;
+  else if (xpos < 0.) return 1;
   else return 2;
 
 }
@@ -73,25 +77,31 @@ int SteppingAction::WhichXBin(double xpos){
 int SteppingAction::WhichZYbin(double zpos, double ypos, int xbin){
   int zbin = -1;
   int ybin = -1;
+  // number of bins in first section
   int nbins1z = 3;
-  int nbins2z = 12;
-  int nbins3z = 12;
   int nbins1y = 96;
+  // number of bins in second section
+  int nbins2z = 12;
   int nbins2y = 12;
+  // number of bins in third section
+  int nbins3z = 12;
   int nbins3y = 6;
   int nbinsz[]={nbins1z,nbins2z,nbins3z};
   int nbinsy[]={nbins1y,nbins2y,nbins3y};
-  //Given (xpos, ypos, zbin), give corresponding 2D bin in zbin (xbin, ybin) 
+  //Given (xpos, ypos, zbin), give corresponding 2D bin in zbin (xbin, ybin)
+  
   for (int i=1; i<=nbinsz[xbin]; i++){
-    if ((zpos < -240 + i*480/nbinsz[xbin]) && (zpos > -240)){
+    // z = (-5,5)
+    if ((zpos < -5 + i*10/nbinsz[xbin]) && (zpos > -5)){
       zbin = i - 1;
-      G4cout << "###### Zpos ###########" << zpos << G4endl;
-      G4cout << "###### Ypos ###########" << ypos << G4endl; 
+      //G4cout << "###### Zpos ###########" << zpos << G4endl;
+      //G4cout << "###### Ypos ###########" << ypos << G4endl; 
       break;
     }
   }
+  // y=(-5,5),
   for (int i=1; i<=nbinsy[xbin]; i++){
-    if ((ypos < -240 +i*480/nbinsy[xbin]) && (ypos > -240)){
+    if ((ypos < -5 +i*10/nbinsy[xbin]) && (ypos > -5)){
       ybin = i - 1;
       break;
     }

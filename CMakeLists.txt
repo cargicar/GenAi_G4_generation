@@ -36,12 +36,12 @@ target_link_libraries(generation ${Geant4_LIBRARIES} )
 
 #----------------------------------------------------------------------------
 # Copy all scripts to the build directory, i.e. the directory in which we
-# build N03. This is so that we can run the executable directly because it
+# build generation. This is so that we can run the executable directly because it
 # relies on these scripts being in the current working directory.
 #
 set(GenAi_G4_generation_SCRIPTS
-    generation.in  generation..large_N.in  generation..out exo1.mac exo2.mac gui.mac newgeom.mac rndmSeed.mac run1.mac run2.mac vis.mac icons.mac
-    visTutor/generationTree0.mac visTutor/generationVis12.loop visTutor/generation.Vis12.mac visTutor/generation.Vis13.loop visTutor/generation.Vis13.mac visTutor/generation.Vis5.mac visTutor/g4Xt.xrm visTutor/heprep.mac
+    generation.in  generation.large_N.in  generation.out exo1.mac exo2.mac gui.mac newgeom.mac rndmSeed.mac run1.mac run2.mac vis.mac icons.mac
+    visTutor/generationTree0.mac visTutor/generationVis12.loop visTutor/generationVis12.mac visTutor/generationVis13.loop visTutor/generationVis13.mac visTutor/generationVis5.mac visTutor/g4Xt.xrm visTutor/heprep.mac
   )
 
 foreach(_script ${GenAi_G4_generation_SCRIPTS})

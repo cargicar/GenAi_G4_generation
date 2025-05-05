@@ -2,6 +2,7 @@ import uproot
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
+import os
 
 nbins1z = 3
 nbins2z = 12
@@ -47,7 +48,7 @@ def get_z(myindex, ybin, xbin):
     else:
         return (myindex - lvl1 - lvl2 - ybin) // nbins3y
 
-def analyze_root_file(infile):
+def analyze_root_file(infile, outfolder):
         with uproot.open(infile) as myfile:
             if "fancy_tree" not in myfile:
                 print(f"Error: Tree 'fancy_tree' not found in '{infile}'")
@@ -56,7 +57,8 @@ def analyze_root_file(infile):
             mytree = myfile["fancy_tree"]
             num_entries = int(mytree.num_entries)
 
-            x_segmentation_bins = np.array([-240., -150., 197., 240.])
+#            x_segmentation_bins = np.array([-240., -150., 197., 240.])
+            x_segmentation_bins = np.array([-12., -8., 8., 12.])
             x_segmentation_values = np.zeros(len(x_segmentation_bins) - 1)
 
             sampling1_eta = np.zeros((nbins1z, nbins1y))
@@ -118,16 +120,20 @@ def analyze_root_file(infile):
 
                     if xbin == 0 and 0 <= zbin < nbins1z and 0 <= ybin < nbins1y:
                         sampling1_eta[zbin, ybin] += energy
-                        zvalue = (np.linspace(-240, 240, nbins1z + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins1z + 1)) / 2)[zbin]
-                        yvalue = (np.linspace(-240, 240, nbins1y + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins1y + 1)) / 2)[ybin]
+                        # z= (-5, 5)
+                        zvalue = (np.linspace(-5, 5, nbins1z + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins1z + 1)) / 2)[zbin]
+                        # zvalue = (np.linspace(-240, 240, nbins1z + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins1z + 1)) / 2)[zbin]
+                        yvalue = (np.linspace(-5, 5, nbins1y + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins1y + 1)) / 2)[ybin]
+
+                        # yvalue = (np.linspace(-240, 240, nbins1y + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins1y + 1)) / 2)[ybin]
                     elif xbin == 1 and 0 <= zbin < nbins2z and 0 <= ybin < nbins2y:
                         sampling2_eta[zbin, ybin] += energy
-                        zvalue = (np.linspace(-240, 240, nbins2z + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins2z + 1)) / 2)[zbin]
-                        yvalue = (np.linspace(-240, 240, nbins2y + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins2y + 1)) / 2)[ybin]
+                        zvalue = (np.linspace(-5, 5, nbins2z + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins2z + 1)) / 2)[zbin]
+                        yvalue = (np.linspace(-5, 5, nbins2y + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins2y + 1)) / 2)[ybin]
                     elif xbin == 2 and 0 <= zbin < nbins3z and 0 <= ybin < nbins3y:
                         sampling3_eta[zbin, ybin] += energy
-                        zvalue = (np.linspace(-240, 240, nbins3z + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins3z + 1)) / 2)[zbin]
-                        yvalue = (np.linspace(-240, 240, nbins3y + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins3y + 1)) / 2)[ybin]
+                        zvalue = (np.linspace(-5, 5, nbins3z + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins3z + 1)) / 2)[zbin]
+                        yvalue = (np.linspace(-5, 5, nbins3y + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins3y + 1)) / 2)[ybin]
 
                     if xbin == 0:
                         first_layer_weighted_z += zvalue * energy
@@ -150,39 +156,50 @@ def analyze_root_file(infile):
                 shower_depth_width.append((lateral_depth_sum2 / total_energy - (lateral_depth_sum / total_energy)**2)**0.5 if total_energy > 0 else 0)
 
             # Plotting
+            
             plt.figure(figsize=(8, 6))
             plt.bar(x_segmentation_bins[:-1] + np.diff(x_segmentation_bins) / 2, x_segmentation_values, width=np.diff(x_segmentation_bins))
             plt.xlabel("X")
             plt.ylabel("Energy")
             plt.title("Total X Profile")
-            plt.savefig("plots/tot_xprofil_uproot.pdf")
+            file_name = "tot_xprofil_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
-            plt.imshow(sampling1_eta.T, origin='lower', aspect='auto', extent=[-240, 240, -240, 240])
+            plt.imshow(sampling1_eta.T, origin='lower', aspect='auto', extent=[-5, 5, -5, 5])
             plt.colorbar(label="Energy")
             plt.xlabel("Z")
             plt.ylabel("Y")
             plt.title("Total ZY Layer 1")
-            plt.savefig("plots/tot_zy_layer1_uproot.pdf")
+            #plt.savefig("plots/tot_zy_layer1_uproot.pdf")
+            file_name = "tot_zy_layer1_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
-            plt.imshow(sampling2_eta.T, origin='lower', aspect='auto', extent=[-240, 240, -240, 240])
+            plt.imshow(sampling2_eta.T, origin='lower', aspect='auto', extent=[-5, 5, -5, 5])
             plt.colorbar(label="Energy")
             plt.xlabel("Z")
             plt.ylabel("Y")
             plt.title("Total ZY Layer 2")
-            plt.savefig("plots/tot_zy_layer2_uproot.pdf")
+#            plt.savefig("plots/tot_zy_layer2_uproot.pdf")
+            file_name = "tot_zy_layer2_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
-            plt.imshow(sampling3_eta.T, origin='lower', aspect='auto', extent=[-240, 240, -240, 240], norm='log')
+            plt.imshow(sampling3_eta.T, origin='lower', aspect='auto', extent=[-5, 5, -5, 5], norm='log')
             plt.colorbar(label="Log(Energy)")
             plt.xlabel("Z")
             plt.ylabel("Y")
-            plt.title("Total ZY Layer 3 (Log Scale)")
-            plt.savefig("plots/tot_zy_layer3_uproot.pdf")
+            #plt.title("Total ZY Layer 3 (Log Scale)")
+            file_name = "Total ZY Layer 3 (Log Scale)"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
@@ -190,7 +207,10 @@ def analyze_root_file(infile):
             plt.xlabel("Fraction in Third Layer")
             plt.ylabel("Counts")
             plt.title("Fraction of Energy in Third Layer")
-            plt.savefig("plots/Fraction_in_thirdlayer_uproot.pdf")
+            #plt.savefig("plots/Fraction_in_thirdlayer_uproot.pdf")
+            file_name = "Fraction_in_thirdlayer_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
@@ -198,7 +218,10 @@ def analyze_root_file(infile):
             plt.xlabel("Fraction Not In Active Area")
             plt.ylabel("Counts")
             plt.title("Fraction of Energy Not in Active Area")
-            plt.savefig("plots/Fraction_not_in_uproot.pdf")
+            # plt.savefig("plots/Fraction_not_in_uproot.pdf")
+            file_name = "Fraction_not_in_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
@@ -206,7 +229,10 @@ def analyze_root_file(infile):
             plt.xlabel("Shower Depth")
             plt.ylabel("Counts")
             plt.title("Shower Depth")
-            plt.savefig("plots/Shower_Depth_uproot.pdf")
+            #plt.savefig("plots/Shower_Depth_uproot.pdf")
+            file_name = "Shower_Depth_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
@@ -214,7 +240,10 @@ def analyze_root_file(infile):
             plt.xlabel("Middle Lateral Width")
             plt.ylabel("Counts")
             plt.title("Middle Lateral Width")
-            plt.savefig("plots/Middle_lateral_width_uproot.pdf")
+            #plt.savefig("plots/Middle_lateral_width_uproot.pdf")
+            file_name = "Middle_lateral_width_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
@@ -222,7 +251,10 @@ def analyze_root_file(infile):
             plt.xlabel("Front Lateral Width")
             plt.ylabel("Counts")
             plt.title("Front Lateral Width")
-            plt.savefig("plots/Front_lateral_width_uproot.pdf")
+            #plt.savefig("plots/Front_lateral_width_uproot.pdf")
+            file_name = "Front_lateral_width_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
             plt.figure(figsize=(8, 6))
@@ -230,14 +262,20 @@ def analyze_root_file(infile):
             plt.xlabel("Shower Depth Width")
             plt.ylabel("Counts")
             plt.title("Shower Depth Width")
-            plt.savefig("plots/Shower_Depth_width_uproot.pdf")
+            #plt.savefig("plots/Shower_Depth_width_uproot.pdf")
+            file_name = "Shower_Depth_width_uproot.pdf"
+            save_path = os.path.join(outfolder, file_name)
+            plt.savefig(save_path)
             plt.close()
 
     # except Exception as e:
     #     print(f"An error occurred: {e}")
 
 if __name__ == '__main__':
+    #python helpers_py/plot_1D_features_X_to_Z.py --infile build/calogan.root --outfolder ~/Rnet_local/GENAI_for_particle_phys/datasets_from_calogan_rep/plots
+
     parser = argparse.ArgumentParser(description='Analyze GEANT4 ROOT output using uproot and plot results.')
     parser.add_argument('--infile', help='Input ROOT file name')
+    parser.add_argument('--outfolder', help='Output folder name ')
     args = parser.parse_args()
-    analyze_root_file(infile=args.infile)
+    analyze_root_file(infile=args.infile, outfolder=args.outfolder)
