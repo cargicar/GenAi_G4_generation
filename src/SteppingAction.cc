@@ -69,7 +69,7 @@ int SteppingAction::WhichXBin(double xpos){
   // Lets split the calorimeter in 3 equal spaced sections in x-dim
   //  x=(-12,12), zsegmentation = [-12, -8, 8, 12]
   if (xpos < -8.) return 0;
-  else if (xpos < 0.) return 1;
+  else if (xpos < 8.) return 1;
   else return 2;
 
 }

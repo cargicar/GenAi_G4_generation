@@ -1,1 +1,5 @@
 build/
+*.pdf
+*.png
+*.jpg
+*.jpeg

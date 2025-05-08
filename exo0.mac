@@ -20,7 +20,7 @@
 #
 /N03/det/update
 #
-/vis/viewer/zoom 1.3
+#/vis/viewer/zoom 1.3
 #
 /process/list
 /process/inactivate msc
@@ -31,6 +31,6 @@
 /run/setCut 100 cm
 /run/initialize
 #
-/gun/particle e+
+/gun/particle e-
 /gun/energy 100 GeV
-/vis/scene/add/axes 0 0 0 10 cm
+#/vis/scene/add/axes 0 0 0 10 cm
