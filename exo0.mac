@@ -28,9 +28,27 @@
 /process/inactivate compt
 /process/inactivate conv
 #
-/run/setCut 100 cm
+#/run/numberOfThreads 32
+#/run/setCut 100 cm
 /run/initialize
 #
-/gun/particle e-
-/gun/energy 100 GeV
+#/gun/particle e-
+#/gun/energy 100 GeV
+#/run/beamOn 10
+
+#see https://geant4.web.cern.ch/geant4/UserDocumentation/UsersGuides/ForApplicationDeveloper/html/ch02s07.html for details.
+#/gps/List #lists the particles you can shoot with G4
+/gps/particle e+
+/gps/pos/type Beam
+#/gps/pos/centre 0.0 0.0 -28.8
+/gps/direction 1 0 0
+/gps/ene/type Lin
+/gps/ene/min 1 GeV	
+/gps/ene/max 10 GeV	
+/gps/ene/gradient 0. #uniform
+/gps/ene/intercept 1	
+/gps/number 1 
+/run/beamOn 100
+
+
 #/vis/scene/add/axes 0 0 0 10 cm

@@ -44,39 +44,96 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 
+//....oooOO0OOooo........oooOO0OOooo.GunParticle.oooOO0OOooo........oooOO0OOooo......
+
+// PrimaryGeneratorAction::PrimaryGeneratorAction()
+// {
+//   G4int n_particle = 1;
+//   particleGun  = new G4ParticleGun(n_particle);
+//   Detector = (DetectorConstruction*)
+//              G4RunManager::GetRunManager()->GetUserDetectorConstruction();  
+  
+//   //create a messenger for this class
+//   gunMessenger = new PrimaryGeneratorMessenger(this);
+
+//   // default particle kinematic
+
+//   G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
+//   G4String particleName;
+//   G4ParticleDefinition* particle
+//                     = particleTable->FindParticle(particleName="e-");
+//   particleGun->SetParticleDefinition(particle);
+//   particleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));
+//   particleGun->SetParticleEnergy(50.*MeV);
+//   G4double position = -0.5*(Detector->GetWorldSizeX());
+//   particleGun->SetParticlePosition(G4ThreeVector(position,0.*cm,0.*cm));
+  
+//   rndmFlag = "off";
+
+// }
+
+// //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+// PrimaryGeneratorAction::~PrimaryGeneratorAction()
+// {
+//   delete particleGun;
+//   delete gunMessenger;
+// }
+
+// //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+// void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
+// {
+//   //this function is called at the begining of event
+//   // 
+//   G4double x0 = -0.5*(Detector->GetWorldSizeX());
+//   G4double y0 = 0.*cm, z0 = 0.*cm;
+//   if (rndmFlag == "on")
+//      {y0 = (Detector->GetCalorSizeYZ())*(G4UniformRand()-0.5);
+//       z0 = (Detector->GetCalorSizeYZ())*(G4UniformRand()-0.5);
+//      } 
+//   particleGun->SetParticlePosition(G4ThreeVector(x0,y0,z0));
+
+//   particleGun->GeneratePrimaryVertex(anEvent);
+// }
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+//....oooOO0OOooo........oooOO0OOooo.use GPS instead? oooOO0OOooo........oooOO0OOooo......
+#include "G4GeneralParticleSource.hh"
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorAction::PrimaryGeneratorAction()
+: G4VUserPrimaryGeneratorAction(),
+  gps(nullptr),
+  gunMessenger(nullptr),
+  Detector(nullptr),
+  rndmFlag("off")
 {
-  G4int n_particle = 1;
-  particleGun  = new G4ParticleGun(n_particle);
+  gps = new G4GeneralParticleSource();
+  //Detector = static_cast<DetectorConstruction*>(G4RunManager::GetRunManager()->GetUserDetectorConstruction());
   Detector = (DetectorConstruction*)
-             G4RunManager::GetRunManager()->GetUserDetectorConstruction();  
+              G4RunManager::GetRunManager()->GetUserDetectorConstruction();  
   
   //create a messenger for this class
   gunMessenger = new PrimaryGeneratorMessenger(this);
 
-  // default particle kinematic
-
-  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
-  G4String particleName;
-  G4ParticleDefinition* particle
-                    = particleTable->FindParticle(particleName="e-");
-  particleGun->SetParticleDefinition(particle);
-  particleGun->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));
-  particleGun->SetParticleEnergy(50.*MeV);
-  G4double position = -0.5*(Detector->GetWorldSizeX());
-  particleGun->SetParticlePosition(G4ThreeVector(position,0.*cm,0.*cm));
-  
-  rndmFlag = "off";
-
+  // default particle kinematic (now set via GPS methods)
+// G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
+// G4String particleName = "e-";
+// G4ParticleDefinition* particle= particleTable->FindParticle(particleName);
+//  gps->SetParticleDefinition(particle);
+//  gps->GetCurrentSource()->SetParticleMomentumDirection(G4ThreeVector(1.,0.,0.));
+//  gps->GetCurrentSource()->SetParticleEnergy(50.*MeV);
+//  G4double position = -0.5*(Detector->GetWorldSizeX());
+// gps->GetCurrentSource()->SetParticlePosition(G4ThreeVector(position,0.*cm,0.*cm));
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorAction::~PrimaryGeneratorAction()
 {
-  delete particleGun;
+  delete gps;
   delete gunMessenger;
 }
 
@@ -85,17 +142,17 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
   //this function is called at the begining of event
-  // 
+  //
   G4double x0 = -0.5*(Detector->GetWorldSizeX());
   G4double y0 = 0.*cm, z0 = 0.*cm;
   if (rndmFlag == "on")
-     {y0 = (Detector->GetCalorSizeYZ())*(G4UniformRand()-0.5);
-      z0 = (Detector->GetCalorSizeYZ())*(G4UniformRand()-0.5);
-     } 
-  particleGun->SetParticlePosition(G4ThreeVector(x0,y0,z0));
+  {
+    y0 = (Detector->GetCalorSizeYZ())*(G4UniformRand()-0.5);
+    z0 = (Detector->GetCalorSizeYZ())*(G4UniformRand()-0.5);
+  }
+  gps->GetCurrentSource()->SetParticlePosition(G4ThreeVector(x0,y0,z0));
 
-  particleGun->GeneratePrimaryVertex(anEvent);
+  gps->GeneratePrimaryVertex(anEvent);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-

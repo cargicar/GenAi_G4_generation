@@ -36,6 +36,7 @@
 
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
+#include "G4GeneralParticleSource.hh"
 
 class G4ParticleGun;
 class G4Event;
@@ -56,7 +57,7 @@ public:
 private:
   G4ParticleGun*           particleGun;  //pointer a to G4  class
   DetectorConstruction*    Detector;     //pointer to the geometry
-    
+   G4GeneralParticleSource * gps;
   PrimaryGeneratorMessenger* gunMessenger; //messenger of this class
   G4String                   rndmFlag;     //flag for a rndm impact point
 };
