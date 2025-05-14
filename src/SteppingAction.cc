@@ -66,10 +66,8 @@ SteppingAction::~SteppingAction()
 int SteppingAction::WhichXBin(double xpos){
  
   //  G4cout << "###### Xpos ###########" << xpos << G4endl;
-  // Lets split the calorimeter in 3 equal spaced sections in x-dim
-  //  x=(-12,12), zsegmentation = [-12, -8, 8, 12]
-  if (xpos < -8.) return 0;
-  else if (xpos < 8.) return 1;
+  if (xpos < -150.) return 0;
+  else if (xpos < 197.) return 1;
   else return 2;
 
 }
@@ -92,7 +90,7 @@ int SteppingAction::WhichZYbin(double zpos, double ypos, int xbin){
   
   for (int i=1; i<=nbinsz[xbin]; i++){
     // z = (-5,5)
-    if ((zpos < -5 + i*10/nbinsz[xbin]) && (zpos > -5)){
+    if ((zpos < -240 + i*480/nbinsz[xbin]) && (zpos > -240)){
       zbin = i - 1;
       //G4cout << "###### Zpos ###########" << zpos << G4endl;
       //G4cout << "###### Ypos ###########" << ypos << G4endl; 
@@ -101,7 +99,7 @@ int SteppingAction::WhichZYbin(double zpos, double ypos, int xbin){
   }
   // y=(-5,5),
   for (int i=1; i<=nbinsy[xbin]; i++){
-    if ((ypos < -5 +i*10/nbinsy[xbin]) && (ypos > -5)){
+    if ((ypos < -240 +i*480/nbinsy[xbin]) && (ypos > -240)){
       ybin = i - 1;
       break;
     }
