@@ -46,6 +46,7 @@ def parse_position_data(filename):
     except FileNotFoundError:
         print(f"Error: File not found - {filename}")
         return [], [], []  # Return empty lists in case of error
+    
     y_pos = set(y_positions)
     z_pos = set(z_positions)
     x_pos = set(x_positions)
@@ -56,7 +57,7 @@ def parse_position_data(filename):
 
 if __name__ == "__main__":
     # Example usage:
-    filename = "out.txt"  # Replace with your actual file name
+    filename = "../build/out.txt"  # Replace with your actual file name
     x_pos, y_pos, z_pos = parse_position_data(filename)
 
     print("X Positions:", x_pos)

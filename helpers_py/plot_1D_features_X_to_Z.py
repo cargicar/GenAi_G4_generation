@@ -5,11 +5,13 @@ import argparse
 import os
 
 nbins1z = 3
-nbins2z = 12
-nbins3z = 12
 nbins1y = 96
 nbins2y = 12
+nbins2z = 12
+nbins3z = 12
 nbins3y = 6
+
+
 lvl1 = nbins1z * nbins1y
 lvl2 = nbins2z * nbins2y
 lvl3 = nbins3z * nbins3y
@@ -56,9 +58,9 @@ def analyze_root_file(infile, outfolder):
 
             mytree = myfile["fancy_tree"]
             num_entries = int(mytree.num_entries)
-
+            
 #            x_segmentation_bins = np.array([-240., -150., 197., 240.])
-            x_segmentation_bins = np.array([-12., -8., 8., 12.])
+            x_segmentation_bins = np.array([0., 30., 90., 120.])
             x_segmentation_values = np.zeros(len(x_segmentation_bins) - 1)
 
             sampling1_eta = np.zeros((nbins1z, nbins1y))
@@ -123,17 +125,17 @@ def analyze_root_file(infile, outfolder):
                         # z= (-5, 5)
                         zvalue = (np.linspace(-5, 5, nbins1z + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins1z + 1)) / 2)[zbin]
                         # zvalue = (np.linspace(-240, 240, nbins1z + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins1z + 1)) / 2)[zbin]
-                        yvalue = (np.linspace(-5, 5, nbins1y + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins1y + 1)) / 2)[ybin]
+                        yvalue = (np.linspace(-20, 20, nbins1y + 1)[:-1] + np.diff(np.linspace(-20, 20, nbins1y + 1)) / 2)[ybin]
 
                         # yvalue = (np.linspace(-240, 240, nbins1y + 1)[:-1] + np.diff(np.linspace(-240, 240, nbins1y + 1)) / 2)[ybin]
                     elif xbin == 1 and 0 <= zbin < nbins2z and 0 <= ybin < nbins2y:
                         sampling2_eta[zbin, ybin] += energy
                         zvalue = (np.linspace(-5, 5, nbins2z + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins2z + 1)) / 2)[zbin]
-                        yvalue = (np.linspace(-5, 5, nbins2y + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins2y + 1)) / 2)[ybin]
+                        yvalue = (np.linspace(-20, 20, nbins2y + 1)[:-1] + np.diff(np.linspace(-20, 20, nbins2y + 1)) / 2)[ybin]
                     elif xbin == 2 and 0 <= zbin < nbins3z and 0 <= ybin < nbins3y:
                         sampling3_eta[zbin, ybin] += energy
                         zvalue = (np.linspace(-5, 5, nbins3z + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins3z + 1)) / 2)[zbin]
-                        yvalue = (np.linspace(-5, 5, nbins3y + 1)[:-1] + np.diff(np.linspace(-5, 5, nbins3y + 1)) / 2)[ybin]
+                        yvalue = (np.linspace(-20, 20, nbins3y + 1)[:-1] + np.diff(np.linspace(-20, 20, nbins3y + 1)) / 2)[ybin]
 
                     if xbin == 0:
                         first_layer_weighted_z += zvalue * energy
@@ -168,7 +170,7 @@ def analyze_root_file(infile, outfolder):
             plt.close()
 
             plt.figure(figsize=(8, 6))
-            plt.imshow(sampling1_eta.T, origin='lower', aspect='auto', extent=[-5, 5, -5, 5])
+            plt.imshow(sampling1_eta.T, origin='lower', aspect='auto')#, extent=[-5, 5, -5, 5])
             plt.colorbar(label="Energy")
             plt.xlabel("Z")
             plt.ylabel("Y")
@@ -180,7 +182,7 @@ def analyze_root_file(infile, outfolder):
             plt.close()
 
             plt.figure(figsize=(8, 6))
-            plt.imshow(sampling2_eta.T, origin='lower', aspect='auto', extent=[-5, 5, -5, 5])
+            plt.imshow(sampling2_eta.T, origin='lower', aspect='auto')#, extent=[-5, 5, -5, 5])
             plt.colorbar(label="Energy")
             plt.xlabel("Z")
             plt.ylabel("Y")
@@ -193,6 +195,7 @@ def analyze_root_file(infile, outfolder):
 
             plt.figure(figsize=(8, 6))
             plt.imshow(sampling3_eta.T, origin='lower', aspect='auto', extent=[-5, 5, -5, 5], norm='log')
+            breakpoint()
             plt.colorbar(label="Log(Energy)")
             plt.xlabel("Z")
             plt.ylabel("Y")
