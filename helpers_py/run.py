@@ -45,10 +45,12 @@ for particle in particles:
             #mac_file = os.path.join(output_directory, f"genAi_{particle.replace('+', 'plus').replace('-', 'minus').replace('0', 'zero')}_{abso}_{gap}.mac")
             folder_name = os.path.join(output_directory, f"genAi_{particle.replace('+', 'plus').replace('-', 'minus').replace('0', 'zero')}_{abso}_{gap}")
             os.makedirs(folder_name, exist_ok=True)
+            # make folder to store plots
+            os.makedirs(f"{folder_name}/plots", exist_ok=True)
             mac_file = os.path.join(folder_name, f"genAi_{particle.replace('+', 'plus').replace('-', 'minus').replace('0', 'zero')}_{abso}_{gap}.mac")
             stdout_file = os.path.join(folder_name, f"genAi_{particle.replace('+', 'plus').replace('-', 'minus').replace('0', 'zero')}_{abso}_{gap}.txt")
             os.environ['GAN_FNAME'] = os.path.join(folder_name, f"generated_calo.root") # visible in this process + all children
-            
+            print(f"Run. Creating Macro File for this run\n")
             with open(mac_file, "w") as f:
                 f.write(f"/N03/det/setNbOfLayers {nLayers}\n")
                 f.write(f"/N03/det/setAbsMat {abso}\n")
@@ -72,11 +74,19 @@ for particle in particles:
                 f.write(f"/gps/number 1\n") 
                 f.write(f"/run/beamOn {nParticles}\n")
             print(f"mac_file {mac_file}")
+            print(f"\nRunning Geant4 simulation\n")
             result = subprocess.run(['./build/generation', mac_file, "&>stdout_file"], capture_output=True, text=True)
-            
+            print(f"Run. Saving sdtout and stderr\n")
             with open(stdout_file, "w") as f:
                  f.write(f'Return Code: {result.returncode}\n')
                  f.write(f'Standard Output: {result.stdout}\n')
                  f.write(f'Standard Error: {result.stderr}\n')
             print(f"\nOutputfiles created in the '{folder_name}' directory.")
+            print(f"Run. Creating Plots")
+            plts_folder = os.path.join(folder_name, f'generated_calo.root')
+            subprocess.run(['python', 'helpers_py/plot_1D_features_ROOT_x_z.py', '--in-file', plts_folder])
+            print("Run Terminated!!")
+            
+            
 
+        
