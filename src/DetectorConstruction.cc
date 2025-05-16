@@ -54,6 +54,7 @@
 #include "G4SystemOfUnits.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+G4ThreadLocal
 
 DetectorConstruction::DetectorConstruction()
 :AbsorberMaterial(0),GapMaterial(0),defaultMaterial(0),

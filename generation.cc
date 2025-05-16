@@ -30,7 +30,12 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+#ifdef G4MULTITHREADED
+#include "G4MTRunManager.hh"
+#else
 #include "G4RunManager.hh"
+#endif
+
 #include "G4UImanager.hh"
 
 #include "Randomize.hh"
@@ -55,6 +60,16 @@
 
 int main(int argc,char** argv)
 {
+#ifdef G4MULTITHREADED
+  G4int nThreads = 0;
+#endif
+  for ( G4int i=1; i<argc; i=i+2 ) {
+#ifdef G4MULTITHREADED
+    if ( G4String(argv[i]) == "-t" ) {
+      nThreads = G4UIcommand::ConvertToInt(argv[i+1]);
+    }
+#endif
+  }
   // Choose the Random engine
   //
   CLHEP::HepRandom::setTheEngine(new CLHEP::RanecuEngine);
@@ -65,7 +80,14 @@ int main(int argc,char** argv)
      
   // Construct the default run manager
   //
+#ifdef G4MULTITHREADED
+  G4MTRunManager * runManager = new G4MTRunManager;
+  if ( nThreads > 0 ) { 
+    runManager->SetNumberOfThreads(nThreads);
+  }  
+#else
   G4RunManager * runManager = new G4RunManager;
+#endif
 
   // Set mandatory initialization classes
   //
