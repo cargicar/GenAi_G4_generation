@@ -1,22 +1,34 @@
 #!/bin/bash
 
+#SBATCH --job-name=genai_datageneration
+#SBATCH --nodes=1
+#SBATCH --ntasks=32 # Request one task per item in the list
+#SBATCH --cpus-per-task=1  # Or more if ./a.out can use them
+#SBATCH --time=10:00:00
+#SBATCH --constraint=cpu
+#SBATCH --qos=regular
+#SBATCH --account=m3246
+#SBATCH  --image=docker:geant4/geant4:11.0.3
+
+## Run as sbatch --env-file=datasets.env ./slurm_bash.sh
 #Debug
 # env G4FORCENUMBEROFTHREADS=4
 #/run/numberOfThreads 32
-particles=("e-" "mu+")
-absorbers=("Lead")
-gaps=("liquidArgon")
-output_directory="../data_generated_debug/"
+#particles=("e-" "mu+")
+#absorbers=("Lead")
+#gaps=("liquidArgon")
+#output_directory="../data_generated_debug/"
+
 # Particles. Leptons and some hadrons
-#particles=("e-" "e+" "mu-" "mu+" "tau-" "tau+" "nu_e" "anti_nu_e" "nu_mu" "anti_nu_mu" "nu_tau" "anti_nu_tau" "p+" "n0" "pi+" "pi-" "pi0" "kaon+" "kaon-" "kaon0S" "lambda" "d")
+particles=("e-" "e+" "mu-" "mu+" "tau-" "tau+" "nu_e" "anti_nu_e" "nu_mu" "anti_nu_mu" "nu_tau" "anti_nu_tau" "p+" "n0" "pi+" "pi-" "pi0" "kaon+" "kaon-" "kaon0S" "lambda" "d")
 
 # Materials
-#absorbers=("Lead" "Aluminium" "U235" "U238" "enriched Uranium" "Hydrogen" "Nitrogen" "Oxygen")
+absorbers=("Lead" "Aluminium" "Hydrogen" "Nitrogen" "Oxygen")
 # absorbers=("Iron" "Tungsten" "Copper" "Carbon" "Silicon" "liquidArgon" "Mylar" "quartz" "Air" "Aerogel" "CarbonicGas" "WaterSteam")
 
 # Gaps
-#gaps=("liquidArgon" "liquidXenon" "Scintillator" "Galactic" "Water" "Beam" "Air")
-#output_directory="../data_generated/"
+gaps=("liquidArgon" "liquidXenon" "Scintillator" "Galactic" "Water" "Beam" "Air")
+output_directory="../data_generated_scheduled/"
 
 mkdir -p "$output_directory"
 
@@ -29,7 +41,7 @@ YZ_size=120 # cm
 min_e=1
 max_e=100
 # Number of particles
-nParticles=100
+nParticles=1000
 
 n=0
 for particle in "${particles[@]}"; do
@@ -75,16 +87,18 @@ EOF
       echo ""
       echo "Running Geant4 simulation"
       echo "Outputfiles to be store in '$folder_name' directory."
-      srun -n 1 ./build/generation "$mac_file" &> "$stdout_file" &
+      srun -n 1  shifter  --env-file=datasets.env ./build/generation "$mac_file" &> "$stdout_file" &
       echo "Run. Saving stdout and stderr"
       #echo "Return Code: $?" > "$stdout_file"
       #cat "$stdout_file"
       echo ""
       echo "Outputfiles created in the '$folder_name' directory."
-      echo "Run. NOT Creating Plots, ROOT create weird interactions with geant4. Later run this script only with the plot portion and comment out ./genetarion line"
+      echo "Run. Creating Plots"
       plts_folder="${folder_name}/generated_calo.root"
-      #python helpers_py/plot_1D_features_ROOT_x_z.py --in-file "$plts_folder"
+      conda activate geant4_study
+      python helpers_py/plot_1D_features_ROOT_x_z.py --in-file "$plts_folder"
       echo "Run Terminated!!"
     done
   done
 done
+wait
