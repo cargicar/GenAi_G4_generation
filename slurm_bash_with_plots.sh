@@ -10,25 +10,26 @@
 #SBATCH --account=m3246
 #SBATCH  --image=docker:geant4/geant4:11.0.3
 
-## Run as sbatch --env-file=datasets.env ./slurm_bash.sh
-#Debug
-# env G4FORCENUMBEROFTHREADS=4
-#/run/numberOfThreads 32
-#particles=("e-" "mu+")
-#absorbers=("Lead")
-#gaps=("liquidArgon")
-#output_directory="../data_generated_debug/"
-
-# Particles. Leptons and some hadrons
-particles=("e-" "e+" "mu-" "mu+" "tau-" "tau+" "nu_e" "anti_nu_e" "nu_mu" "anti_nu_mu" "nu_tau" "anti_nu_tau" "p+" "n0" "pi+" "pi-" "pi0" "kaon+" "kaon-" "kaon0S" "lambda" "d")
-
-# Materials
-absorbers=("Lead" "Aluminium" "Hydrogen" "Nitrogen" "Oxygen")
-# absorbers=("Iron" "Tungsten" "Copper" "Carbon" "Silicon" "liquidArgon" "Mylar" "quartz" "Air" "Aerogel" "CarbonicGas" "WaterSteam")
-
-# Gaps
-gaps=("liquidArgon" "liquidXenon" "Scintillator" "Galactic" "Water" "Beam" "Air")
-output_directory="../data_generated_scheduled/"
+debug=false
+if $debug; then
+    # env G4FORCENUMBEROFTHREADS=4
+    #/run/numberOfThreads 32
+    particles=("e-" "mu+")
+    absorbers=("Lead")
+    gaps=("liquidArgon")
+    output_directory="../data_generated_debug/"
+    nParticles=100
+else
+    # Particles. Leptons and some hadrons
+    particles=("e-" "e+" "mu-" "mu+" "tau-" "tau+" "nu_e" "anti_nu_e" "nu_mu" "anti_nu_mu" "nu_tau" "anti_nu_tau" "p+" "n0" "pi+" "pi-" "pi0" "kaon+" "kaon-" "kaon0S" "lambda" "d")
+    # Materials
+    absorbers=("Lead" "Aluminium" "Hydrogen" "Nitrogen" "Oxygen")
+    # absorbers=("Iron" "Tungsten" "Copper" "Carbon" "Silicon" "liquidArgon" "Mylar" "quartz" "Air" "Aerogel" "CarbonicGas" "WaterSteam")
+    # Gaps
+    gaps=("liquidArgon" "liquidXenon" "Scintillator" "Galactic" "Water" "Beam" "Air")
+    output_directory="../data_generated/"
+    nParticles=1000
+fi
 
 mkdir -p "$output_directory"
 
@@ -40,10 +41,7 @@ YZ_size=120 # cm
 # Energy
 min_e=1
 max_e=100
-# Number of particles
-nParticles=1000
 
-n=0
 for particle in "${particles[@]}"; do
   for abso in "${absorbers[@]}"; do
     for gap in "${gaps[@]}"; do
@@ -51,8 +49,6 @@ for particle in "${particles[@]}"; do
       #folder_name="${output_directory}genAi_${particle//+/plus//-/minus//0/zero}_${abso}_${gap}"
       folder_name="${output_directory}genAi_${particle}_${abso}_${gap}"
       mkdir -p "$folder_name"
-      mkdir -p "${folder_name}/plots"
-      #mac_file="${folder_name}/genAi_${particle//+/plus//-/minus//0/zero}_${abso}_${gap}.mac"
       mac_file="${folder_name}/genAi_${particle}_${abso}_${gap}.mac"
       #stdout_file="${folder_name}/genAi_${particle//+/plus//-/minus//0/zero}_${abso}_${gap}.txt"
       stdout_file="${folder_name}/genAi_${particle}_${abso}_${gap}.txt"
@@ -93,12 +89,21 @@ EOF
       #cat "$stdout_file"
       echo ""
       echo "Outputfiles created in the '$folder_name' directory."
-      #echo "Run. Creating Plots"
-      plts_folder="${folder_name}/generated_calo.root"
-      #conda activate geant4_study
-      #python helpers_py/plot_1D_features_ROOT_x_z.py --in-file "$plts_folder"
       echo "Run Terminated!!"
     done
   done
+done
+wait
+
+module load conda
+conda activate g4plots
+
+for folder in "$output_directory"*; do
+    mkdir -p "${folder}/plots"
+     echo "Run. Creating Plots for '$folder'"
+     root_path="${folder}/generated_calo.root"
+    # echo "root path '$root_path'"
+     srun -n 1 python helpers_py/plot_1D_features_ROOT_x_z.py --in-file "$root_path" &
+    echo "Plot '$folder' done!!"
 done
 wait
