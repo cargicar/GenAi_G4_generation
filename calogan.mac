@@ -22,7 +22,7 @@
 #
 /N03/det/update
 #
-/vis/viewer/zoom 1.3
+#/vis/viewer/zoom 1.3
 #
 #/process/list
 #/process/inactivate msc
@@ -41,6 +41,7 @@
 #
 /run/printProgress 1
 /run/verbose 2
+/event/verbose 0
 #/gun/particle e-
 #/gun/particle pi0
 #/gun/particle pi+
@@ -48,6 +49,7 @@
 #/gun/energy 10 GeV
 #/run/beamOn 1000
 
+/tracking/verbose 1
 #see https://geant4.web.cern.ch/geant4/UserDocumentation/UsersGuides/ForApplicationDeveloper/html/ch02s07.html for details.
 #/gps/List #lists the particles you can shoot with G4
 /gps/particle e-
@@ -60,4 +62,4 @@
 /gps/ene/gradient 0. #uniform
 /gps/ene/intercept 1	
 /gps/number 1 
-/run/beamOn 100
+/run/beamOn 10

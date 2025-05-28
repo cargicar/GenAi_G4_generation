@@ -61,7 +61,10 @@ int main(int argc,char** argv)
   
   // User Verbose output class
   //
-  G4VSteppingVerbose::SetInstance(new SteppingVerbose);
+  //G4VSteppingVerbose::SetInstance(new SteppingVerbose);
+  G4VSteppingVerbose* verbosity = new SteppingVerbose;
+  G4VSteppingVerbose::SetInstance(verbosity);
+ 
      
   // Construct the default run manager
   //
@@ -127,7 +130,7 @@ int main(int argc,char** argv)
   delete visManager;
   #endif
   delete runManager;
-
+  delete verbosity;
   return 0;
 }
 
