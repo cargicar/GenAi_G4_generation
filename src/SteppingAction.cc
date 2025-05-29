@@ -32,7 +32,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "SteppingAction.hh"
-#include "RunData.hh" //Calogan
+
 #include "DetectorConstruction.hh"
 #include "EventAction.hh"
 
@@ -47,8 +47,7 @@ SteppingAction::SteppingAction()
              G4RunManager::GetRunManager()->GetUserDetectorConstruction();
   eventaction = (EventAction*)
                 G4RunManager::GetRunManager()->GetUserEventAction();               
-  // G4UserSteppingAction()//Calogan
-}
+ }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -56,10 +55,6 @@ SteppingAction::~SteppingAction()
 { }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-
-//....oooOO0OOooo........oooOO0OOoooCalorGan Grid block. Begin .oooOO0OOooo........oooOO0OOooo......
-
 
 void SteppingAction::UserSteppingAction(const G4Step* aStep)
 {
@@ -69,43 +64,32 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   
   // collect energy and track length step by step
   G4double edep = aStep->GetTotalEnergyDeposit();
-
-  // step length
-  G4double stepLength = 0.;
-  if (step->GetTrack()->GetDefinition()->GetPDGCharge() != 0.) {
-    stepLength = step->GetStepLength();
-  }
-
+  
+//....oooOO0OOooo........PointCloud block........oooOO0OOooo........oooOO0OOooo......
   G4StepPoint* point = aStep->GetPreStepPoint();
   G4ThreeVector pos = point->GetPosition();
-  G4int StepNumber = aStep->GetTrack()->GetCurrentStepNumber();
+  G4int stepNumber = aStep->GetTrack()->GetCurrentStepNumber();
 
       
-  G4cout <<"step#  " << StepNumber <<"(x, y ,z) " << pos.x() << " " << pos.y() << " " << pos.z() << " energy " << edep << G4endl;
+  G4cout <<"step#  " << stepNumber <<"(x, y ,z) " << pos.x() << " " << pos.y() << " " << pos.z() << " energy " << edep << G4endl;
+    // Get the analysis manager instance
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+  // Fill the Ntuple columns
+  analysisManager->FillNtupleDColumn(0, stepNumber);  // Column 0: StepNumber
+  analysisManager->FillNtupleDColumn(1, pos.x());    // Column 1: PositionX
+  analysisManager->FillNtupleDColumn(2, pos.y());    // Column 2: PositionY
+  analysisManager->FillNtupleDColumn(3, pos.z());    // Column 3: PositionZ
+  analysisManager->FillNtupleDColumn(4, edep);    // Column 4: Energy Deposited
+  // Add a row to the Ntuple
+  analysisManager->AddNtupleRow();
+//....oooOO0OOooo........PointCloud block........oooOO0OOooo........oooOO0OOooo......
 
-  
-  RunData* runData = static_cast<RunData*>(G4RunManager::GetRunManager()->GetNonConstCurrentRun());
-
-  // runData->Add(mybin, edep, stepLength); 
-
-
-  if (volume == fDetConstruction->GetAbsorberPV()) {
-    //runData->Add(kAbs,edep, stepLength);
-    runData->Add(kAbs, StepNumber, pos.x(), pos.y(), pos.z(), edep); 
-  }
-
-  if (volume == fDetConstruction->GetGapPV()) {
-    //runData->Add(kGap,edep, stepLength);
-    runData->Add(kGap, StepNumber, pos.x(), pos.y(), pos.z(), edep); 
-  }
-
-   //....oooOO0OOooo........oooOO0OOooo.Calogan block. end oooOO0OOooo........oooOO0OOooo......
-//  G4double stepl = 0.;
- // if (aStep->GetTrack()->GetDefinition()->GetPDGCharge() != 0.)
-  //  stepl = aStep->GetStepLength();
+  G4double stepl = 0.;
+  if (aStep->GetTrack()->GetDefinition()->GetPDGCharge() != 0.)
+    stepl = aStep->GetStepLength();
       
-  //if (volume == detector->GetAbsorber()) eventaction->AddAbs(edep,stepl);
-  //if (volume == detector->GetGap())      eventaction->AddGap(edep,stepl);
+  if (volume == detector->GetAbsorber()) eventaction->AddAbs(edep,stepl);
+  if (volume == detector->GetGap())      eventaction->AddGap(edep,stepl);
   
   //example of saving random number seed of this event, under condition
   //// if (condition) G4RunManager::GetRunManager()->rndmSaveThisEvent(); 

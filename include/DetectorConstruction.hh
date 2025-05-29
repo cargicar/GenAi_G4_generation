@@ -43,8 +43,6 @@ class G4VPhysicalVolume;
 class G4Material;
 class G4UniformMagField;
 class DetectorMessenger;
-// calogan
-class G4GlobalMagFieldMessenger;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

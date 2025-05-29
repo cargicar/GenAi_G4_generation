@@ -48,8 +48,8 @@ public:
   EventAction();
   virtual ~EventAction();
 
-  void  BeginOfEventAction(const G4Event* event);
-  void    EndOfEventAction(const G4Event* event);
+  void  BeginOfEventAction(const G4Event*);
+  void    EndOfEventAction(const G4Event*);
     
   void AddAbs(G4double de, G4double dl) {EnergyAbs += de; TrackLAbs += dl;};
   void AddGap(G4double de, G4double dl) {EnergyGap += de; TrackLGap += dl;};
@@ -65,9 +65,6 @@ private:
    G4int     printModulo;
                              
    EventActionMessenger*  eventMessenger;
-  //calogan
-   void PrintEventStatistics(G4double absoEdep, G4double absoTrackLength,
-                              G4double gapEdep, G4double gapTrackLength) const;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

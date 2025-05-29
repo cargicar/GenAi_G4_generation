@@ -30,12 +30,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "RunAction.hh"
-#include "RunData.hh"
-#include "Analysis.hh"
-
-#include "G4SystemOfUnits.hh"
-#include <sstream>
-
+#include "G4AnalysisManager.hh"
 #include "G4Run.hh"
 #include "G4RunManager.hh"
 #include "G4UnitsTable.hh"
@@ -44,11 +39,6 @@
 
 //RunAction::RunAction()
 //{}
-
-//RunAction::~RunAction()
-//{}
-
-//....oooOO0OOooo........oooOO0OOooo.calogan block. begin oooOO0OOooo........oooOO0OOooo......
 RunAction::RunAction()
  : G4UserRunAction()
 { 
@@ -83,7 +73,7 @@ RunAction::RunAction()
   std::string fname = (val == NULL ? std::string("fancy_tree") : std::string(val));
 
 
-  analysisManager->CreateNtuple(fname.c_str(), "Step and Particle Position");
+  analysisManager->CreateNtuple("StepData", "Step and Particle Position");
   //std::stringstream out;
   //  out << i;
   //analysisManager->CreateNtupleDColumn("cell_" + out.str());
@@ -91,7 +81,7 @@ RunAction::RunAction()
   analysisManager->CreateNtupleDColumn("position_x");
   analysisManager->CreateNtupleDColumn("position_y");
   analysisManager->CreateNtupleDColumn("position_z");
-  //analysisManager->CreateNtupleDColumn("EnergyDeposit");
+  analysisManager->CreateNtupleDColumn("EnergyDep");
   //analysisManager->CreateNtupleDColumn("TrackLength");
   //analysisManager->CreateNtupleDColumn("VolumeName");
   //analysisManager->CreateNtupleDColumn("ProcessName");
@@ -105,21 +95,12 @@ RunAction::RunAction()
   analysisManager->FinishNtuple();
 }
 
-
-RunAction::~RunAction()
-{
-  delete G4AnalysisManager::Instance();  
-}
-
-G4Run* RunAction::GenerateRun()
-{
-  return (new RunData);
-}
-
-//....oooOO0OOooo........oooOO0OOooo.calogan block. end oooOO0OOooo........oooOO0OOooo......
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+RunAction::~RunAction()
+{}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void RunAction::BeginOfRunAction(const G4Run* aRun)
 { 
@@ -131,24 +112,23 @@ void RunAction::BeginOfRunAction(const G4Run* aRun)
   //initialize cumulative quantities
   //
   sumEAbs = sum2EAbs =sumEGap = sum2EGap = 0.;
-  sumLAbs = sum2LAbs =sumLGap = sum2LGap = 0.;
-
+  sumLAbs = sum2LAbs =sumLGap = sum2LGap = 0.; 
   //....oooOO0OOooo........oooOO0OOooo.calogan block. begin oooOO0OOooo........oooOO0OOooo......
     // Get analysis manager
-  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+    G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
 
-  // Open an output file
-  //
-
-  char const* val = getenv("GAN_FNAME"); 
-  //std::string fname = (val == NULL ? std::string("plz_work_kthxbai") : std::string(val));
-  std::string fname = (val == NULL ? std::string("calogan.root") : std::string(val));
-
-
-  G4String fileName = fname.c_str();
-  analysisManager->OpenFile(fileName);
-  //....oooOO0OOooo........oooOO0OOooo.calogan block. end oooOO0OOooo........oooOO0OOooo......
-
+    // Open an output file
+    //
+  
+    char const* val = getenv("GAN_FNAME"); 
+    //std::string fname = (val == NULL ? std::string("plz_work_kthxbai") : std::string(val));
+    std::string fname = (val == NULL ? std::string("calogan.root") : std::string(val));
+  
+  
+    G4String fileName = fname.c_str();
+    analysisManager->OpenFile(fileName);
+    //....oooOO0OOooo........oooOO0OOooo.calogan block. end oooOO0OOooo........oooOO0OOooo......
+  
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -189,7 +169,7 @@ void RunAction::EndOfRunAction(const G4Run* aRun)
   sumLGap /= NbOfEvents; sum2LGap /= NbOfEvents;
   G4double rmsLGap = sum2LGap - sumLGap*sumLGap;
   if (rmsLGap >0.) rmsLGap = std::sqrt(rmsLGap); else rmsLGap = 0.;
-
+  
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
   //print
   //

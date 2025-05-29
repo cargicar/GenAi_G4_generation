@@ -32,7 +32,7 @@
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #include "EventAction.hh"
-#include "RunData.hh"
+
 #include "RunAction.hh"
 #include "EventActionMessenger.hh"
 
@@ -72,12 +72,6 @@ void EventAction::BeginOfEventAction(const G4Event* evt)
  // initialisation per event
  EnergyAbs = EnergyGap = 0.;
  TrackLAbs = TrackLGap = 0.;
-//....oooOO0OOooo........oooOO0OOooo.Calogan block. begin .oooOO0OOooo........oooOO0OOooo......
- RunData* runData 
-    = static_cast<RunData*>(
-        G4RunManager::GetRunManager()->GetNonConstCurrentRun());
-  runData->Reset();
-//....oooOO0OOooo........oooOO0OOooo.Calogan block. end .oooOO0OOooo........oooOO0OOooo......
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -87,23 +81,6 @@ void EventAction::EndOfEventAction(const G4Event* evt)
   //accumulates statistic
   //
   runAct->fillPerEvent(EnergyAbs, EnergyGap, TrackLAbs, TrackLGap);
-
-//....oooOO0OOooo........oooOO0OOooo.Calogan block. begin .oooOO0OOooo........oooOO0OOooo......
-  G4PrimaryVertex* primaryVertex = evt->GetPrimaryVertex();
-  G4PrimaryParticle* primaryParticle = primaryVertex->GetPrimary();
-  G4double ke = primaryParticle->GetKineticEnergy()/1000.; //in GeV.
-
-  RunData* runData 
-    = static_cast<RunData*>(
-        G4RunManager::GetRunManager()->GetNonConstCurrentRun());
-  runData->SetTotalEnergy(ke);
-  runData->FillPerEvent();
-  
-  //print per event (modulo n)
-  //
-  G4int eventID = evt->GetEventID();
-  G4int printModulo = G4RunManager::GetRunManager()->GetPrintProgress();
- //....oooOO0OOooo........oooOO0OOooo.Calogan block. end .oooOO0OOooo........oooOO0OOooo......
   
   //print per event (modulo n)
   //

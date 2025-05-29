@@ -36,8 +36,6 @@
 
 #include "G4UserRunAction.hh"
 #include "globals.hh"
-#include <string>
-#include <iostream>
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -49,7 +47,6 @@ public:
   RunAction();
   virtual ~RunAction();
 
-  virtual G4Run* GenerateRun();
   void BeginOfRunAction(const G4Run*);
   void   EndOfRunAction(const G4Run*);
     
