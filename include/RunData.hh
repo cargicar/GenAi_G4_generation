@@ -33,15 +33,13 @@
 
 #include "G4Run.hh"
 #include "globals.hh"
-
+#include <array>
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-enum {
-  kAbs = 0,
-  kGap = 1,
-  kDim = 2, 
-  kNumCells = 504 + 3 // 3 overflow bins for the three calo layers
-};  
+const G4int kAbs = 0;
+const G4int kGap = 1;
+const G4int kDim = 2;
+
 
 ///  Run data class
 ///
@@ -59,50 +57,55 @@ enum {
 class RunData : public G4Run
 {
 public:
-  RunData();
-  virtual ~RunData();
+  RunData() = default;
+  ~RunData() override = default;
 
   // void Add(G4int id, G4double de, G4double dl);
-  void Add(G4int id, G4double de);
+  void Add(G4int id, G4int sid, G4double px, G4double py, G4double pz, G4double de);
   void FillPerEvent();
   
   void Reset();
 
   // Get methods
-  // G4String  GetVolumeName(G4int id) const;
+  G4String  GetVolumeName(G4int id) const;
   G4double  GetEdep(G4int id) const;
-  G4double GetTotalEnergy(){return TotalEnergy;};
-  void SetTotalEnergy(G4double e){TotalEnergy = e;};
-  // G4double  GetTrackLength(G4int id) const; 
+  //G4double GetTotalEnergy(){return TotalEnergy;};
+  //void SetTotalEnergy(G4double e){TotalEnergy = e;};
+  G4double  GetTrackLength(G4int id) const; 
 
 private:
+  std::array<G4String, kDim> fVolumeNames = {"Absorber", "Gap"};
+  std::array<G4double, kDim> fEdep = {0., 0.};
+  std::array<G4double, kDim> fTrackLength = {0., 0.};
   // G4String  fVolumeNames[kDim];
-  G4double  fEdep[kNumCells];
-  G4double TotalEnergy;
+  //G4double  fEdep[kNumCells];
+  //G4double TotalEnergy;
   // G4double  fTrackLength[kDim];
 };
 
 // inline functions
 
 // inline void RunData::Add(G4int id, G4double de, G4double dl) {
-inline void RunData::Add(G4int id, G4double de) {
-  fEdep[id] += de; 
-  // fTrackLength[id] += dl;
-}
+inline void RunData::Add(G4int id, G4double px, G4double py, G4double pz, G4double de) 
+  {
+    fEdep[id] += de;
+    fTrackLength[id] += dl;
+  }
 
-// inline G4String  RunData::GetVolumeName(G4int id) const {
-//   return fVolumeNames[id];
-// }
-
-inline G4double  RunData::GetEdep(G4int id) const {
-  return fEdep[id];
-}   
-
-// inline G4double  RunData::GetTrackLength(G4int id) const {
-//   return fTrackLength[id];
-// }
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
+  inline G4String RunData::GetVolumeName(G4int id) const
+  {
+    return fVolumeNames[id];
+  }
+  
+  inline G4double RunData::GetEdep(G4int id) const
+  {
+    return fEdep[id];
+  }
+  
+  inline G4double RunData::GetTrackLength(G4int id) const
+  {
+    return fTrackLength[id];
+  }
+    
+  //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 #endif
-

@@ -40,11 +40,7 @@ RunData::RunData() : G4Run()//, fNumCells(4815)
 {
   // fVolumeNames[0] = "Absorber";
   // fVolumeNames[1] = "Gap";
- 
-  for ( G4int i=0; i < kNumCells; i++) {
-    fEdep[i] = 0.;
-    // fTrackLength[i] = 0.; 
-  }  
+  
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -59,14 +55,18 @@ void RunData::FillPerEvent()
   // get analysis manager
   G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
   //accumulate statistic
-  //
-
-  for (int i = 0; i < kNumCells; ++i) {
-    // analysisManager->CreateNtupleDColumn("cell_" + std::to_string(i));
-    analysisManager->FillNtupleDColumn(i, fEdep[i]);
-  }
-  analysisManager->FillNtupleDColumn(kNumCells, GetTotalEnergy());
-
+  
+  //analysisManager->FillNtupleDColumn(kNumCells, GetTotalEnergy());
+  analysisManager->FillNtupleDColumn("StepNumber");
+  analysisManager->FillNtupleDColumn("position_x");
+  analysisManager->FillNtupleDColumn("position_y");
+  analysisManager->FillNtupleDColumn("position_z");
+  analysisManager->FillNtupleDColumn("EnergyDeposit");
+  //analysisManager->FillNtupleDColumn("TrackLength");
+  //analysisManager->FillNtupleDColumn("VolumeName");
+  //analysisManager->FillNtupleDColumn("ProcessName");
+  //analysisManager->CreateNtupleDColumn("TotalEnergy");
+  
   // for ( G4int i=0; i<kDim; i++) {
   //   // fill histograms
   //   // analysisManager->FillH1(i+1, fEdep[i]);

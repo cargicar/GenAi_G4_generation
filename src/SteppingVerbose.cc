@@ -77,6 +77,7 @@ void SteppingVerbose::StepInfo()
         << std::setw(6) << G4BestUnit(fStep->GetStepLength(),"Length")
         << std::setw(6) << G4BestUnit(fTrack->GetTrackLength(),"Length")
         << std::setw(10) << fTrack->GetVolume()->GetName();
+    //G4cout << "###### Zpos ###########" << GetPosition().z() << G4endl;
 
     const G4VProcess* process 
                       = fStep->GetPostStepPoint()->GetProcessDefinedStep();

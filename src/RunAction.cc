@@ -83,24 +83,24 @@ RunAction::RunAction()
   std::string fname = (val == NULL ? std::string("fancy_tree") : std::string(val));
 
 
-  analysisManager->CreateNtuple(fname.c_str(), "Edep and TrackL");
-
-  int total_bins = 504 + 3;  // 3 overflow bins for the three calo layers
-
-  for (int i = 0; i < total_bins; ++i) {
-
-    std::stringstream out;
-    out << i;
-    analysisManager->CreateNtupleDColumn("cell_" + out.str());
-  }
-  analysisManager->CreateNtupleDColumn("TotalEnergy");
+  analysisManager->CreateNtuple(fname.c_str(), "Step and Particle Position");
+  //std::stringstream out;
+  //  out << i;
+  //analysisManager->CreateNtupleDColumn("cell_" + out.str());
+  analysisManager->CreateNtupleDColumn("StepNumber");
+  analysisManager->CreateNtupleDColumn("position_x");
+  analysisManager->CreateNtupleDColumn("position_y");
+  analysisManager->CreateNtupleDColumn("position_z");
+  //analysisManager->CreateNtupleDColumn("EnergyDeposit");
+  //analysisManager->CreateNtupleDColumn("TrackLength");
+  //analysisManager->CreateNtupleDColumn("VolumeName");
+  //analysisManager->CreateNtupleDColumn("ProcessName");
+  //analysisManager->CreateNtupleDColumn("TotalEnergy");
   
   // analysisManager->CreateNtupleDColumn("Eabs");
   // analysisManager->CreateNtupleDColumn("Egap");
   // analysisManager->CreateNtupleDColumn("Labs");
   // analysisManager->CreateNtupleDColumn("Lgap");
-
-
 
   analysisManager->FinishNtuple();
 }

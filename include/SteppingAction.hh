@@ -46,15 +46,12 @@ class SteppingAction : public G4UserSteppingAction
 {
 public:
   SteppingAction();
-  //Calogan
   //SteppingAction(const DetectorConstruction* detectorConstruction);
   virtual ~SteppingAction();
 
   // void UserSteppingAction(const G4Step*);
-  //Calogan   
+  
   virtual void UserSteppingAction(const G4Step* step);
-  int WhichXBin(double xpos);
-  int WhichZYbin(double zpos, double ypos, int xbin);
 
 private:
   DetectorConstruction* detector;
