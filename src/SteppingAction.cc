@@ -69,7 +69,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   G4StepPoint* point = aStep->GetPreStepPoint();
   G4ThreeVector pos = point->GetPosition();
   G4int stepNumber = aStep->GetTrack()->GetCurrentStepNumber();
-
+  
       
   G4cout <<"step#  " << stepNumber <<"(x, y ,z) " << pos.x() << " " << pos.y() << " " << pos.z() << " energy " << edep << G4endl;
     // Get the analysis manager instance

@@ -47,7 +47,7 @@ def plots(file_path):
     y_positions = []
     z_positions = []
     energy_depositions= []
-    
+    initial_energies = []
 
     # Loop over the entries in the TTree
     for event in tree:
@@ -55,8 +55,9 @@ def plots(file_path):
         y_positions.append(event.position_y)
         z_positions.append(event.position_z)
         energy_depositions.append(event.EnergyDep)
-
+        initial_energies.append(event.initialEnergy)
     # Convert lists to NumPy arrays for easier plotting
+    breakpoint()
     x_np = np.array(x_positions)
     y_np = np.array(y_positions)
     z_np = np.array(z_positions)

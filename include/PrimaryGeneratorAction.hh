@@ -37,6 +37,8 @@
 #include "G4VUserPrimaryGeneratorAction.hh"
 #include "globals.hh"
 #include "G4GeneralParticleSource.hh"
+#include "G4AnalysisManager.hh"
+
 
 class G4ParticleGun;
 class G4Event;

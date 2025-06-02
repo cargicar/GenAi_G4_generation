@@ -82,6 +82,7 @@ RunAction::RunAction()
   analysisManager->CreateNtupleDColumn("position_y");
   analysisManager->CreateNtupleDColumn("position_z");
   analysisManager->CreateNtupleDColumn("EnergyDep");
+  analysisManager->CreateNtupleDColumn("InitialEnergy");
   //analysisManager->CreateNtupleDColumn("TrackLength");
   //analysisManager->CreateNtupleDColumn("VolumeName");
   //analysisManager->CreateNtupleDColumn("ProcessName");

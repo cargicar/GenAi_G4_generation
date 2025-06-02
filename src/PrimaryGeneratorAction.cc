@@ -153,6 +153,15 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
   gps->GetCurrentSource()->SetParticlePosition(G4ThreeVector(x0,y0,z0));
 
   gps->GeneratePrimaryVertex(anEvent);
+  G4PrimaryParticle* pp = anEvent->GetPrimaryVertex()->GetPrimary();
+  G4double initialEnergy = pp->GetKineticEnergy();
+        G4cout << "Initial energy of primary particle (GPS): " << initialEnergy / GeV << " GeV" << G4endl;
+        // Store or use the energy here
+        G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+        // Fill the Ntuple columns
+        analysisManager->FillNtupleDColumn(5, initialEnergy);    // Column 4: Energy Deposited
+        // Add a row to the Ntuple
+        analysisManager->AddNtupleRow();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
