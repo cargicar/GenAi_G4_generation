@@ -42,44 +42,83 @@ def plots(file_path):
         print(f"Error: TTree 'StepData' not found in file '{file_path}'")
         exit()
 
-    # Create lists to store the data
+    # Create lists to store the data 
     x_positions = []
     y_positions = []
     z_positions = []
     energy_depositions= []
     initial_energies = []
-
+    
     # Loop over the entries in the TTree
+    n = 0
     for event in tree:
+        n+=1
+        _Ienergy = event.InitialEnergy
+        if _Ienergy != 0:
+          initial_energies.append(_Ienergy)
+        last_initial_energy = -1
         x_positions.append(event.position_x)
         y_positions.append(event.position_y)
         z_positions.append(event.position_z)
         energy_depositions.append(event.EnergyDep)
-        initial_energies.append(event.initialEnergy)
-    # Convert lists to NumPy arrays for easier plotting
-    breakpoint()
-    x_np = np.array(x_positions)
-    y_np = np.array(y_positions)
-    z_np = np.array(z_positions)
-    energy_np = np.array(energy_depositions)
+            # Convert lists to NumPy arrays for easier plotting
+        if len(initial_energies)>1 and _Ienergy != 0:
+            initial_energy = initial_energies.pop(0)  # Get the primary particle energy 
+            x_np = np.array(x_positions)
+            y_np = np.array(y_positions)
+            z_np = np.array(z_positions)
+            energy_np = np.array(energy_depositions)
 
-    # --- Plotting the 3D trajectory ---
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
+            # --- Plotting the 3D trajectory ---
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(111, projection='3d')
+            #ax.scatter(x_np, y_np, z_np, s=10, alpha=0.5)  # Adjust 's' for marker size, 'alpha' for transparency
+            scatter = ax.scatter(x_np, y_np, z_np, c=energy_np, cmap='viridis', s=10, alpha=0.7)
+            ax.set_xlabel('X Position')
+            ax.set_ylabel('Y Position')
+            ax.set_zlabel('Z Position')
+            ax.set_title(f'Particle Trajectory, Edep: {initial_energy:.2f} MeV')
+            ax.view_init(elev=30, azim=45)
+            # Add a colorbar
+            cbar = fig.colorbar(scatter, ax=ax, label='Energy Deposition', shrink=0.8) # Added 'ax=ax'
+            plt.grid(True)
+            #plt.savefig(plot_folder)
+            plt.savefig(f"plots/trajectory_plot_with edep_e-_{initial_energy}.png", dpi=300, bbox_inches='tight')
+            # Restart lists for the next event
+            plt.close(fig)
+            x_positions = []
+            y_positions = []
+            z_positions = []
+            energy_depositions= []
+        elif len(initial_energies) == 1 and _Ienergy != 0 and n>1:    
+            initial_energy = initial_energies.pop(0)  # Get the primary particle energy
+            x_np = np.array(x_positions)
+            y_np = np.array(y_positions)
+            z_np = np.array(z_positions)
+            energy_np = np.array(energy_depositions)
 
-    #ax.scatter(x_np, y_np, z_np, s=10, alpha=0.5)  # Adjust 's' for marker size, 'alpha' for transparency
-    scatter = ax.scatter(x_np, y_np, z_np, c=energy_np, cmap='viridis', s=10, alpha=0.7)
+            # --- Plotting the 3D trajectory ---
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(111, projection='3d')
+            #ax.scatter(x_np, y_np, z_np, s=10, alpha=0.5)  # Adjust 's' for marker size, 'alpha' for transparency
+            scatter = ax.scatter(x_np, y_np, z_np, c=energy_np, cmap='viridis', s=10, alpha=0.7)
+            ax.set_xlabel('X Position')
+            ax.set_ylabel('Y Position')
+            ax.set_zlabel('Z Position')
+            ax.set_title(f'Particle Trajectory, Edep: {initial_energy:.2f} MeV')
+            ax.view_init(elev=30, azim=45)
+            # Add a colorbar
+            cbar = fig.colorbar(scatter, ax=ax, label='Energy Deposition', shrink=0.8) # Added 'ax=ax'
+            plt.grid(True)
+            #plt.savefig(plot_folder)
+            plt.savefig(f"plots/trajectory_plot_with edep_e-_{initial_energy}.png", dpi=300, bbox_inches='tight')
+            # Restart lists for the next event
+            plt.close(fig)
+            x_positions = []
+            y_positions = []
+            z_positions = []
+            energy_depositions= []
 
-    ax.set_xlabel('X Position')
-    ax.set_ylabel('Y Position')
-    ax.set_zlabel('Z Position')
-    ax.set_title('Particle Trajectory with Edep')
-    ax.view_init(elev=30, azim=45)
-    # Add a colorbar
-    cbar = fig.colorbar(scatter, ax=ax, label='Energy Deposition', shrink=0.8) # Added 'ax=ax'
-    plt.grid(True)
-    #plt.savefig(plot_folder)
-    plt.savefig(f"plots/trajectory_plot_with edep.png", dpi=300, bbox_inches='tight')
 
     # Close the ROOT file
     root_file.Close()
