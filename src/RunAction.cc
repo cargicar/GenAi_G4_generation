@@ -77,14 +77,14 @@ RunAction::RunAction()
   //std::stringstream out;
   //  out << i;
   //analysisManager->CreateNtupleDColumn("cell_" + out.str());
-  analysisManager->CreateNtupleDColumn("StepNumber");
-  analysisManager->CreateNtupleDColumn("position_x");
-  analysisManager->CreateNtupleDColumn("position_y");
-  analysisManager->CreateNtupleDColumn("position_z");
-  analysisManager->CreateNtupleDColumn("EnergyDep");
-  analysisManager->CreateNtupleDColumn("InitialEnergy");
+  analysisManager->CreateNtupleDColumn("StepNumber"); // Col 0: StepNumber
+  analysisManager->CreateNtupleDColumn("position_x"); // Col 1: PositionX
+  analysisManager->CreateNtupleDColumn("position_y"); // Col 2: PositionY
+  analysisManager->CreateNtupleDColumn("position_z"); // Col 3: PositionZ
+  analysisManager->CreateNtupleDColumn("EnergyDep"); // Col 4: Energy Deposited
+  analysisManager->CreateNtupleDColumn("InitialEnergy"); // Col 5: Initial Energy
+  analysisManager->CreateNtupleIColumn("VolumeGap"); // Col 6: Volume Gap (1 if in gap, 0 otherwise)
   //analysisManager->CreateNtupleDColumn("TrackLength");
-  //analysisManager->CreateNtupleDColumn("VolumeName");
   //analysisManager->CreateNtupleDColumn("ProcessName");
   //analysisManager->CreateNtupleDColumn("TotalEnergy");
   

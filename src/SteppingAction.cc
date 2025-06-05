@@ -80,6 +80,8 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
   analysisManager->FillNtupleDColumn(2, pos.y());    // Column 2: PositionY
   analysisManager->FillNtupleDColumn(3, pos.z());    // Column 3: PositionZ
   analysisManager->FillNtupleDColumn(4, edep);    // Column 4: Energy Deposited
+  if (volume == detector->GetGap()) analysisManager->FillNtupleIColumn(6, 1); 
+  else analysisManager->FillNtupleIColumn(6, 0);  // Column 6: Gap Flag
   // Add a row to the Ntuple
   analysisManager->AddNtupleRow();
 //....oooOO0OOooo........PointCloud block........oooOO0OOooo........oooOO0OOooo......
@@ -89,8 +91,7 @@ void SteppingAction::UserSteppingAction(const G4Step* aStep)
     stepl = aStep->GetStepLength();
       
   if (volume == detector->GetAbsorber()) eventaction->AddAbs(edep,stepl);
-  if (volume == detector->GetGap())      eventaction->AddGap(edep,stepl);
-  
+  if (volume == detector->GetGap()) eventaction->AddGap(edep,stepl);
   //example of saving random number seed of this event, under condition
   //// if (condition) G4RunManager::GetRunManager()->rndmSaveThisEvent(); 
 }

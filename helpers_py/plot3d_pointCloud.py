@@ -48,20 +48,23 @@ def plots(file_path):
     z_positions = []
     energy_depositions= []
     initial_energies = []
-    
+    gaps = []
     # Loop over the entries in the TTree
     n = 0
     for event in tree:
         n+=1
         _Ienergy = event.InitialEnergy
+        gap = event.VolumeGap
+        gaps.append(gap)
         if _Ienergy != 0:
           initial_energies.append(_Ienergy)
-        last_initial_energy = -1
-        x_positions.append(event.position_x)
-        y_positions.append(event.position_y)
-        z_positions.append(event.position_z)
-        energy_depositions.append(event.EnergyDep)
-            # Convert lists to NumPy arrays for easier plotting
+        
+        if gap != 0:
+            x_positions.append(event.position_x)
+            y_positions.append(event.position_y)
+            z_positions.append(event.position_z)
+            energy_depositions.append(event.EnergyDep)
+                  # Convert lists to NumPy arrays for easier plotting
         if len(initial_energies)>1 and _Ienergy != 0:
             initial_energy = initial_energies.pop(0)  # Get the primary particle energy 
             x_np = np.array(x_positions)
@@ -105,7 +108,7 @@ def plots(file_path):
             ax.set_xlabel('X Position')
             ax.set_ylabel('Y Position')
             ax.set_zlabel('Z Position')
-            ax.set_title(f'Particle Trajectory, Edep: {initial_energy:.2f} MeV')
+            ax.set_title(f'Particle Trajectory, Initial E: {initial_energy:.2f} MeV')
             ax.view_init(elev=30, azim=45)
             # Add a colorbar
             cbar = fig.colorbar(scatter, ax=ax, label='Energy Deposition', shrink=0.8) # Added 'ax=ax'
