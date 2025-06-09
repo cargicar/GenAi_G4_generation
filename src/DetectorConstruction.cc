@@ -212,8 +212,45 @@ beam->AddMaterial(Air, fractionmass=1.);
 //
 // or use G4-NIST materials data base
 //
-G4NistManager* man = G4NistManager::Instance();
-man->FindOrBuildMaterial("G4_SODIUM_IODIDE");
+G4NistManager* nist = G4NistManager::Instance();
+nist->FindOrBuildMaterial("G4_SODIUM_IODIDE");
+G4Material* lead = nist->FindOrBuildMaterial("G4_Pb");
+G4Material* tungsten = nist->FindOrBuildMaterial("G4_W");
+G4Material* uranium = nist->FindOrBuildMaterial("G4_U");
+G4Material* copper = nist->FindOrBuildMaterial("G4_Cu");
+G4Element* elCu = nist->FindOrBuildElement("Cu");
+G4Element* elZn = nist->FindOrBuildElement("Zn");
+G4Element* elC = nist->FindOrBuildElement("C");
+G4Element* elSi = nist->FindOrBuildElement("Si");
+G4Element* elP = nist->FindOrBuildElement("P");
+G4Element* elS = nist->FindOrBuildElement("S");
+G4Element* elCr = nist->FindOrBuildElement("Cr");
+G4Element* elMn = nist->FindOrBuildElement("Mn");
+G4Element* elFe = nist->FindOrBuildElement("Fe");
+G4Element* elNi = nist->FindOrBuildElement("Ni");
+// Define Liquid Xenon
+G4Material* liquidXenon = nist->FindOrBuildMaterial("G4_lXe");
+// Define Silicon
+G4Material* silicon = nist->FindOrBuildMaterial("G4_Si");
+
+// Define Brass (e.g., Cartridge Brass ~70% Cu, 30% Zn)
+G4double brassDensity = 8.53 * g/cm3;
+G4Material* brass = new G4Material("Brass", brassDensity, 2);
+brass->AddElement(elCu, 70.0*perCent);
+brass->AddElement(elZn, 30.0*perCent);
+
+// Define Stainless Steel (e.g., SS304)
+G4double steelDensity = 8.00 * g/cm3;
+G4Material* steel = new G4Material("StainlessSteel", steelDensity, 8);
+steel->AddElement(elC, 0.0008);
+steel->AddElement(elSi, 0.01);
+steel->AddElement(elP, 0.00045);
+steel->AddElement(elS, 0.0003);
+steel->AddElement(elCr, 0.19);
+steel->AddElement(elMn, 0.02);
+steel->AddElement(elNi, 0.09);
+steel->AddElement(elFe, G4Element::GetElement("Fe")->GetZ(), 1.0 - (0.0008 + 0.01 + 0.00045 + 0.0003 + 0.19 + 0.02 + 0.09));
+
 
 // print table
 //

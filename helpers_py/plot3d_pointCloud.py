@@ -30,11 +30,18 @@ def get_root_parent(filename):
     return None
 
 def plots(file_path):
-    
+    particle_idx = file_path.find("genAi")
+    parts_forlder_name = file_path[particle_idx:].split("_")
+    if len(parts_forlder_name) >= 2:
+      particle = parts_forlder_name[1]
+    else:
+      particle = "" # Or handle the error as appropriate if there's no second underscore
     root_file = ROOT.TFile(file_path, "READ")
     #myfile = TFile("build/calogan.root")
     parent = get_root_parent(file_path)
     plot_folder = os.path.join(parent, f"plots")
+    os.makedirs(plot_folder, exist_ok=True)
+    
     # Get the TTree
     tree = root_file.Get("StepData")
 
@@ -80,13 +87,13 @@ def plots(file_path):
             ax.set_xlabel('X Position')
             ax.set_ylabel('Y Position')
             ax.set_zlabel('Z Position')
-            ax.set_title(f'Particle Trajectory, Edep: {initial_energy:.2f} MeV')
+            ax.set_title(f'Particle Trajectory e-, Initial E: {initial_energy:.2f} MeV')
             ax.view_init(elev=30, azim=45)
             # Add a colorbar
             cbar = fig.colorbar(scatter, ax=ax, label='Energy Deposition', shrink=0.8) # Added 'ax=ax'
             plt.grid(True)
             #plt.savefig(plot_folder)
-            plt.savefig(f"plots/trajectory_plot_with edep_e-_{initial_energy}.png", dpi=300, bbox_inches='tight')
+            plt.savefig(f"{plot_folder}/steps_{particle}_{initial_energy}.png", dpi=300, bbox_inches='tight')
             # Restart lists for the next event
             plt.close(fig)
             x_positions = []
@@ -108,7 +115,7 @@ def plots(file_path):
             ax.set_xlabel('X Position')
             ax.set_ylabel('Y Position')
             ax.set_zlabel('Z Position')
-            ax.set_title(f'Particle Trajectory, Initial E: {initial_energy:.2f} MeV')
+            ax.set_title(f'Particle Trajectory, e- Initial E: {initial_energy:.2f} MeV')
             ax.view_init(elev=30, azim=45)
             # Add a colorbar
             cbar = fig.colorbar(scatter, ax=ax, label='Energy Deposition', shrink=0.8) # Added 'ax=ax'
@@ -131,6 +138,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--in-file', '-i', action="store", required=True,
                         help='input ROOT file')
+    #parser.add_argument('--particle', '-p' action="store", required=True, help='primary particle type (e.g., e-, pi+, etc.)')
     # parser.add_argument('--out-folder', '-o', action="store", required=True, help='output folder')
     # parser.add_argument('--tree', '-t', action="store", required=True,help='input tree for the ROOT file')
 
