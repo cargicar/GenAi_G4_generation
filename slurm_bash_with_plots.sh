@@ -4,15 +4,15 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=32 # Request one task per item in the list
 #SBATCH --cpus-per-task=1  # Or more if ./a.out can use them
-#SBATCH --time=00:30:00
+#SBATCH --time=10:00:00
 #SBATCH --constraint=cpu
-#SBATCH --qos=debug # or qos=normal
+#SBATCH --qos=regular # or qos=debug
 #SBATCH --account=m3246
 #SBATCH  --image=docker:geant4/geant4:11.0.3
 
-debug=true
+debug=false
 simulation=true
-plot=true
+plot=false
 if $debug; then
     # env G4FORCENUMBEROFTHREADS=4
     #/run/numberOfThreads 32
@@ -29,7 +29,7 @@ else
     absorbers=("G4_Pb" "G4_W" "G4_U" "G4_Cu" "brass" "StainlessSteel")
     # Gaps liquidArgon, liquidXenon, Scintillator, Silicon
     gaps=("liquidArgon" "G4_lXe" "Scintillator" "G4_Si")
-    output_directory="../data_generated/"
+    output_directory="../data_generated_point_clouds1/"
     nParticles=1000
 fi
 
@@ -42,7 +42,7 @@ if $debug; then
   gap_thick=1 # mm
   YZ_size=50 # cm
 else
-  nLayers=80
+  nLayers=40
   abso_thick=2 # mm
   gap_thick=4 # mm
   YZ_size=120 # cm
