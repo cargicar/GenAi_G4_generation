@@ -154,7 +154,7 @@ def read_root(file_path):
 def read_data_g4(folder_path_root,labels=None, histogram = False):
     """Walks through the root files in the given folder path, extracts data from each file
     Returns a dict with key initialEnergy and value (x,y,z,Edep)"""
-    train = {
+    data = {
         #'data':[],# (N,30,4)=(Number of jets, max number of particles, particle_features[eta,phi,pt,mask])
         'showers':[], # (N=primary_particles, max_number of particles in shower = 1000,feat= individual particle features)
         # e.g (N = 1000, sd = 1000, feat= (x,y,z,E))
@@ -165,16 +165,7 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
         'energies':[], # (N,)=(Inital energies of primaries,)
         'gap_pid':[], #(N,4) one hot encoded gap material
     }
-    test = {
-        'data':[],
-        'jet':[],
-        'pid':[],
-    }
-    val = {
-        'data':[],
-        'jet':[],
-        'pid':[],
-    }
+    
     folder_list = os.listdir(folder_path_root)
     # file is tipically something like genAi_e-_brass_G4_lXe
     NonEmpty=0
@@ -220,13 +211,13 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
           #breakpoint()
         npShowers = np.array(all_showers, dtype=object)
         npEnergies = np.array(all_energies, dtype=object)
-        breakpoint()
+        
         pid = to_categorical(particle_labels[particle]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=7)
         gap_pid = to_categorical(gap_labels[gap]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=4)
-        train['showers'].append(npShowers)
-        train['energies'].append(npEnergies)
-        train['pid'].append(pid)
-        train['pid'].append(gap_pid)
+        data['showers'].append(npShowers)
+        data['energies'].append(npEnergies)
+        data['pid'].append(pid)
+        data['gap_pid'].append(gap_pid)
 
         if histogram:
           nparticles_per_energy = [(key,len(events[key][0])) for key in events] # list of tuples (initialEnergy, number of particles)
@@ -261,18 +252,25 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
       
         
     print(f"Total non-empty files processed: {NonEmpty}")
+    return data
     
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Plot GEANT4 root output file')
 
-    parser.add_argument('--in-file', '-i', action="store", required=True,
-                        help='input ROOT file')
-    #parser.add_argument('--particle', '-p' action="store", required=True, help='primary particle type (e.g., e-, pi+, etc.)')
-    # parser.add_argument('--out-folder', '-o', action="store", required=True, help='output folder')
-    # parser.add_argument('--tree', '-t', action="store", required=True,help='input tree for the ROOT file')
-
+    parser.add_argument('--in-file', '-i', action="store", default='../data_generated_point_clouds1/',
+                        help='input ROOT file') #requiered=True,
+    parser.add_argument('--data-out-file', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets',
+                        help='output hf5 data file') #requiered=True,
+    
     args = parser.parse_args()
 
     #plots(args.in_file)
-    read_data_g4(args.in_file, histogram=True)
+    data = read_data_g4(args.in_file, histogram=True)
+
+    with h5.File('{}/train_{}.h5'.format(args.data-out-file, 'G4'), "w") as fh5:
+        dset = fh5.create_dataset('showers', data=data['showers'])
+        dset = fh5.create_dataset('energies', data=data['energies'])
+        dset = fh5.create_dataset('pid', data=data['pid'])
+        dset = fh5.create_dataset('gap_pid', data=data['pid'])
+
