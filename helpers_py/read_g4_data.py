@@ -179,8 +179,9 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
       nparts_all_kaon = [] 
       nparts_all = {}
 
-    all_showers=[]
-    all_energies = []
+    all_showers=[] #all sims 
+    all_energies = [] #all sims 
+    max_particles = 1000 # max number of particles per shower
     for folder in folder_list:
       root_file_path = os.path.join(folder_path_root, folder, "generated_calo.root")
       trees, keys = tress_and_keys(root_file_path)
@@ -201,23 +202,17 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
         for energy, feats in events.items():
           #breakpoint()
           # convert feats to numpy array
-          if len(feats[0])> 1000:
+          if len(feats[0])> max_particles:
             print(f"Skipping event from {particle} with initial energy {energy} due to more than 1000 particles.")
             continue
           feature = np.array(feats).T # shape (Nparticles, 4) with
-          feature_padded = _pad(feature, max_particles=1000) # Pad to 1000 particles
+          feature_padded = _pad(feature, max_particles=max_particles) # Pad to 1000 particles
+          #print(f"feature shape (Nparticles, 4): {feature.shape}, padded shape: {feature_padded.shape}")
           all_showers.append(feature_padded)
+          energy = np.float32(energy)
+          #print(f"energy {energy}, type: {type(energy)}")
           all_energies.append(energy)
           #breakpoint()
-        npShowers = np.array(all_showers, dtype=object)
-        npEnergies = np.array(all_energies, dtype=object)
-        
-        pid = to_categorical(particle_labels[particle]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=7)
-        gap_pid = to_categorical(gap_labels[gap]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=4)
-        data['showers'].append(npShowers)
-        data['energies'].append(npEnergies)
-        data['pid'].append(pid)
-        data['gap_pid'].append(gap_pid)
 
         if histogram:
           nparticles_per_energy = [(key,len(events[key][0])) for key in events] # list of tuples (initialEnergy, number of particles)
@@ -237,6 +232,33 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
           elif particle == "kaon0L":
               nparts_all_kaon.extend(nparticles_per_energy)
 
+    npShowers = np.array(all_showers, dtype=np.float32)
+    npEnergies = np.array(all_energies, dtype=np.float32)
+    
+    pid = to_categorical(particle_labels[particle]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=7)
+    gap_pid = to_categorical(gap_labels[gap]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=4)
+    data['showers'].append(npShowers)
+    data['energies'].append(npEnergies)
+    data['pid'].append(pid)
+    data['gap_pid'].append(gap_pid)
+
+        # hdf5_filename  = f'data_G4.h5' 
+        
+        # with h5.File(hdf5_filename, 'a') as f:
+        #   for _key in ['showers', 'energies', 'pid', 'gap_pid']:
+        #       key_name = f'{folder}_{_key}'  # Unique key name for each group
+        #       # Create a group for this entry (optional, but good for organization)
+        #       group = f.create_group(key_name)
+              
+        #       # Create a dataset within the group and write the data
+        #       # 'data' is the name of the dataset inside the group
+        #       dataset = group.create_dataset(key_name, data=data[_key], compression="gzip")
+              
+        #       #  add metadata (attributes) to groups or datasets
+        #       #dataset.attrs['timestamp'] = np.datetime64('now').astype(str)
+        #       #dataset.attrs['source'] = 'simulated_generator'
+        #       #group.attrs['original_float_value'] = i * 1.5 # If your initial 1000 floats are metadata
+
     if histogram: 
 
       nparts_all["e-"] = nparts_all_e
@@ -250,7 +272,8 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
       with open('nparts_all_dict.pkl', 'wb') as f:
         pickle.dump(nparts_all, f)
       
-        
+    with open('all_g4_data.pkl', 'wb') as f:
+        pickle.dump(data, f)  
     print(f"Total non-empty files processed: {NonEmpty}")
     return data
     
@@ -260,7 +283,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--in-file', '-i', action="store", default='../data_generated_point_clouds1/',
                         help='input ROOT file') #requiered=True,
-    parser.add_argument('--data-out-file', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets',
+    parser.add_argument('--dataoutfile', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets',
                         help='output hf5 data file') #requiered=True,
     
     args = parser.parse_args()
@@ -268,7 +291,7 @@ if __name__ == '__main__':
     #plots(args.in_file)
     data = read_data_g4(args.in_file, histogram=True)
 
-    with h5.File('{}/train_{}.h5'.format(args.data-out-file, 'G4'), "w") as fh5:
+    with h5.File('{}/train_{}.h5'.format(args.dataoutfile, 'G4'), "w") as fh5:
         dset = fh5.create_dataset('showers', data=data['showers'])
         dset = fh5.create_dataset('energies', data=data['energies'])
         dset = fh5.create_dataset('pid', data=data['pid'])
