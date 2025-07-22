@@ -45,16 +45,19 @@ detector_geometry = {"nLayers":40,
 }
 
 def _pad(Nparticles, max_particles=50):
-    """Pads or truncates the list of particles to ensure a fixed length."""
-    if len(Nparticles) > max_particles:
-        print(f"Warning: Number of particles {len(Nparticles)} exceeds max_particles {max_particles}. Not Truncating.")
-        return None
-        #return Nparticles[:max_particles]
-    else:
-        # Pad with zeros
+    """Pads or truncates the list of particles to ensure a fixed length.
+    input: Nparticles=[number_of_points, features]"""
+    assert isinstance(Nparticles, np.ndarray), f"input data must be a numpy array"
+    assert Nparticles.shape[-1]==4, f"last component of input is expected to be 4 features"
+    if Nparticles.shape[0] == max_particles:
+       return Nparticles
+    elif Nparticles.shape[0] < max_particles: # padd it 
         padding = [[0, 0, 0, 0]]* (max_particles - len(Nparticles))
         stack = np.vstack([Nparticles, padding])
         return stack
+    else:
+        x = Nparticles[:max_particles]
+        return x
 
 def tress_and_keys(file_path):
   try:
@@ -153,13 +156,12 @@ def read_root(file_path):
    
 def read_data_g4(folder_path_root,labels=None, histogram = False):
     """Walks through the root files in the given folder path, extracts data from each file
-    Returns a dict with key initialEnergy and value (x,y,z,Edep)"""
+    Returns dicts"""
     data = {
-        #'data':[],# (N,30,4)=(Number of jets, max number of particles, particle_features[eta,phi,pt,mask])
-        'showers':[], # (N=primary_particles, max_number of particles in shower = 1000,feat= individual particle features)
+        'showers':[], # (N=all_primary_particles at all energies, max_number of particles in shower = 1000,feat= individual particle features)
         # e.g (N = 1000, sd = 1000, feat= (x,y,z,E))
-        'layers':[], #(N=primary_particles, layer_features= [nLayers, thickness, material])
-        # e.g (N = 1000, feat=[40, 4 mm ,one_hot_encoded_material])
+        'layers':[], #(N, layer_features= [nLayers, thickness, material]) 
+        # e.g (N = 1000, feat=[40, 4 mm ,int])
         'pid':[], # (N,7)=(Number of primaries, one hot encoded particles type)
         # eg: (N = 1000, one hot encoded particle type [gamma,electron,muon,pi+,pi-,pi0,kaon,p,neutron])
         'energies':[], # (N,)=(Inital energies of primaries,)
@@ -181,7 +183,9 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
 
     all_showers=[] #all sims 
     all_energies = [] #all sims 
+    all_gaps = []
     max_particles = 1000 # max number of particles per shower
+
     for folder in folder_list:
       root_file_path = os.path.join(folder_path_root, folder, "generated_calo.root")
       trees, keys = tress_and_keys(root_file_path)
@@ -202,17 +206,18 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
         for energy, feats in events.items():
           #breakpoint()
           # convert feats to numpy array
-          if len(feats[0])> max_particles:
-            print(f"Skipping event from {particle} with initial energy {energy} due to more than 1000 particles.")
-            continue
           feature = np.array(feats).T # shape (Nparticles, 4) with
-          feature_padded = _pad(feature, max_particles=max_particles) # Pad to 1000 particles
+          feature_padded = _pad(feature, max_particles=max_particles) # Pad or truncate to 1000 particles
           #print(f"feature shape (Nparticles, 4): {feature.shape}, padded shape: {feature_padded.shape}")
           all_showers.append(feature_padded)
           energy = np.float32(energy)
           #print(f"energy {energy}, type: {type(energy)}")
           all_energies.append(energy)
-          #breakpoint()
+          #gap_features = (N, layer_features= [nLayers, thickness, material]) 
+          # detector_geometry = {"nLayers":40, "abso_thick":2, # mm, "gap_thick":4, # mm "YZ_size":120, # cm}
+          gap_features = np.array([detector_geometry["nLayers"], detector_geometry["gap_thick"], gap_labels[gap]])
+          all_gaps.append(gap_features)
+        
 
         if histogram:
           nparticles_per_energy = [(key,len(events[key][0])) for key in events] # list of tuples (initialEnergy, number of particles)
@@ -234,30 +239,16 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
 
     npShowers = np.array(all_showers, dtype=np.float32)
     npEnergies = np.array(all_energies, dtype=np.float32)
+    npGaps = np.array(all_gaps, dtype=np.float32)
     
     pid = to_categorical(particle_labels[particle]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=7)
     gap_pid = to_categorical(gap_labels[gap]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=4)
+    
     data['showers'].append(npShowers)
     data['energies'].append(npEnergies)
+    data['layers'].append(npGaps)
     data['pid'].append(pid)
-    data['gap_pid'].append(gap_pid)
-
-        # hdf5_filename  = f'data_G4.h5' 
-        
-        # with h5.File(hdf5_filename, 'a') as f:
-        #   for _key in ['showers', 'energies', 'pid', 'gap_pid']:
-        #       key_name = f'{folder}_{_key}'  # Unique key name for each group
-        #       # Create a group for this entry (optional, but good for organization)
-        #       group = f.create_group(key_name)
-              
-        #       # Create a dataset within the group and write the data
-        #       # 'data' is the name of the dataset inside the group
-        #       dataset = group.create_dataset(key_name, data=data[_key], compression="gzip")
-              
-        #       #  add metadata (attributes) to groups or datasets
-        #       #dataset.attrs['timestamp'] = np.datetime64('now').astype(str)
-        #       #dataset.attrs['source'] = 'simulated_generator'
-        #       #group.attrs['original_float_value'] = i * 1.5 # If your initial 1000 floats are metadata
+    #data['gap_pid'].append(gap_pid) #TODO ignoring for now
 
     if histogram: 
 
@@ -291,9 +282,9 @@ if __name__ == '__main__':
     #plots(args.in_file)
     data = read_data_g4(args.in_file, histogram=True)
 
-    with h5.File('{}/train_{}.h5'.format(args.dataoutfile, 'G4'), "w") as fh5:
-        dset = fh5.create_dataset('showers', data=data['showers'])
-        dset = fh5.create_dataset('energies', data=data['energies'])
-        dset = fh5.create_dataset('pid', data=data['pid'])
-        dset = fh5.create_dataset('gap_pid', data=data['pid'])
+    with h5.File('{}/all_sims_{}.h5'.format(args.dataoutfile, 'G4'), "w") as fh5:
+        dset = fh5.create_dataset('showers', data=data['showers']) # Analogous to particles
+        dset = fh5.create_dataset('energies', data=data['energies']) 
+        dset = fh5.create_dataset('pid', data=data['pid']) 
+        dset = fh5.create_dataset('layers', data=data['layers']) # analogous to jets
 
