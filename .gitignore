@@ -5,3 +5,5 @@ temp/
 *.jpg
 *.jpeg
 *.pkl
+*.out
+*.rndm

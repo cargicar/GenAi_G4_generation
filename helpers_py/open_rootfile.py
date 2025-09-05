@@ -1,7 +1,7 @@
 import uproot
 
 # Replace 'your_file.root' with the actual path to your ROOT file
-file_path ='/global/homes/c/ccardona/data_generated_point_clouds1/genAi_pi+_brass_G4_lXe/generated_calo.root'
+file_path ='/pscratch/sd/c/ccardona/datasets/data_generated_point_clouds1/genAi_e-_brass_G4_lXe/generated_calo.root'
 
 
 try:

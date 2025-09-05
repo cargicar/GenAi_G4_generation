@@ -154,19 +154,9 @@ def read_root(file_path):
     return particle, events
 
    
-def read_data_g4(folder_path_root,labels=None, histogram = False):
+def read_data_g4(folder_path_root, out_path, labels=None, histogram = False):
     """Walks through the root files in the given folder path, extracts data from each file
     Returns dicts"""
-    data = {
-        'showers':[], # (N=all_primary_particles at all energies, max_number of particles in shower = 1000,feat= individual particle features)
-        # e.g (N = 1000, sd = 1000, feat= (x,y,z,E))
-        'layers':[], #(N, layer_features= [nLayers, thickness, material]) 
-        # e.g (N = 1000, feat=[40, 4 mm ,int])
-        'pid':[], # (N,7)=(Number of primaries, one hot encoded particles type)
-        # eg: (N = 1000, one hot encoded particle type [gamma,electron,muon,pi+,pi-,pi0,kaon,p,neutron])
-        'energies':[], # (N,)=(Inital energies of primaries,)
-        'gap_pid':[], #(N,4) one hot encoded gap material
-    }
     
     folder_list = os.listdir(folder_path_root)
     # file is tipically something like genAi_e-_brass_G4_lXe
@@ -180,16 +170,29 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
       nparts_all_pi = []
       nparts_all_kaon = [] 
       nparts_all = {}
-
-    all_showers=[] #all sims 
-    all_energies = [] #all sims 
-    all_gaps = []
     max_particles = 1000 # max number of particles per shower
 
     for folder in folder_list:
+      # create a data dict for each folder, i.e, each simulation
+      all_showers=[] #all sims 
+      all_energies = [] #all sims 
+      all_gaps = []
+      data = {
+        'showers':[], # (N=all_primary_particles at all energies, max_number of particles in shower = 1000,feat= individual particle features)
+        # e.g (N = 1000, sd = 1000, feat= (x,y,z,E))
+        'global':[], #(all_energies, layer_features= [nLayers, thickness, material]) 
+        # e.g (N = 1000, feat=[40, 4 mm ,int])
+        'pid':[], # (N,7)=(Number of primaries, one hot encoded particles type)
+        # eg: (N = 1000, one hot encoded particle type [gamma,electron,muon,pi+,pi-,pi0,kaon,p,neutron])
+        'energies':[], # (N,)=(Inital energies of primaries,)
+        'gap_pid':[], #(N,4) one hot encoded gap material
+      }
+      npShowers =0
+      npEnergies= 0
       root_file_path = os.path.join(folder_path_root, folder, "generated_calo.root")
       trees, keys = tress_and_keys(root_file_path)
-      if trees is not None:
+      output= '{}/all_sims_{}.pkl'.format(out_path, folder)
+      if (trees is not None) and (not os.path.exists(output)):
         NonEmpty+=1
         sepIdx = [index for index, char in enumerate(folder) if char == '_']
         particle = folder[sepIdx[0]+1:sepIdx[1]] # Extract particle name from folder name
@@ -207,6 +210,7 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
           #breakpoint()
           # convert feats to numpy array
           feature = np.array(feats).T # shape (Nparticles, 4) with
+          #NOTE Not padding for now
           feature_padded = _pad(feature, max_particles=max_particles) # Pad or truncate to 1000 particles
           #print(f"feature shape (Nparticles, 4): {feature.shape}, padded shape: {feature_padded.shape}")
           all_showers.append(feature_padded)
@@ -215,76 +219,88 @@ def read_data_g4(folder_path_root,labels=None, histogram = False):
           all_energies.append(energy)
           #gap_features = (N, layer_features= [nLayers, thickness, material]) 
           # detector_geometry = {"nLayers":40, "abso_thick":2, # mm, "gap_thick":4, # mm "YZ_size":120, # cm}
-          gap_features = np.array([detector_geometry["nLayers"], detector_geometry["gap_thick"], gap_labels[gap]])
+          gap_features = np.array([energy, detector_geometry["nLayers"], detector_geometry["gap_thick"], gap_labels[gap]])
           all_gaps.append(gap_features)
+
+        npShowers = np.array(all_showers, dtype=np.float32)
+        npEnergies = np.array(all_energies, dtype=np.float32)
+        npGaps = np.array(all_gaps, dtype=np.float32)
+            
+        #pid = to_categorical(particle_labels[particle]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=7)
+        #NOTE int class
+        pid = particle_labels[particle]
+        #gap_pid = to_categorical(gap_labels[gap]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=4)
+        #NOTE int gap class
+        gap_pid = gap_labels[gap]
+        data['showers'].append(npShowers)
+        data['energies'].append(npEnergies)
+        data['gap_pid'].append(gap_pid)
+        data['pid'].append(pid)
+
+        with open(output, 'wb') as f:
+          pickle.dump(data, f)
+
         
 
-        if histogram:
-          nparticles_per_energy = [(key,len(events[key][0])) for key in events] # list of tuples (initialEnergy, number of particles)
-          #nparticles_per_energy.sort() # sort by initial energy
-          if particle == "e-":
-             nparts_all_e.extend(nparticles_per_energy)
-          elif particle == "mu-":
-             nparts_all_mu.extend(nparticles_per_energy)
-          elif particle == "gamma":
-             nparts_all_gamma.extend(nparticles_per_energy)
-          elif particle == "neutron":
-             nparts_all_neutron.extend(nparticles_per_energy)
-          elif particle == "proton":
-             nparts_all_proton.extend(nparticles_per_energy)
-          elif particle == "pi+":
-              nparts_all_pi.extend(nparticles_per_energy)
-          elif particle == "kaon0L":
-              nparts_all_kaon.extend(nparticles_per_energy)
+    #     if histogram:
+    #       nparticles_per_energy = [(key,len(events[key][0])) for key in events] # list of tuples (initialEnergy, number of particles)
+    #       #nparticles_per_energy.sort() # sort by initial energy
+    #       if particle == "e-":
+    #          nparts_all_e.extend(nparticles_per_energy)
+    #       elif particle == "mu-":
+    #          nparts_all_mu.extend(nparticles_per_energy)
+    #       elif particle == "gamma":
+    #          nparts_all_gamma.extend(nparticles_per_energy)
+    #       elif particle == "neutron":
+    #          nparts_all_neutron.extend(nparticles_per_energy)
+    #       elif particle == "proton":
+    #          nparts_all_proton.extend(nparticles_per_energy)
+    #       elif particle == "pi+":
+    #           nparts_all_pi.extend(nparticles_per_energy)
+    #       elif particle == "kaon0L":
+    #           nparts_all_kaon.extend(nparticles_per_energy)
+    # #data['gap_pid'].append(gap_pid) #TODO ignoring for now
 
-    npShowers = np.array(all_showers, dtype=np.float32)
-    npEnergies = np.array(all_energies, dtype=np.float32)
-    npGaps = np.array(all_gaps, dtype=np.float32)
-    
-    pid = to_categorical(particle_labels[particle]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=7)
-    gap_pid = to_categorical(gap_labels[gap]*np.ones(shape=(npEnergies.shape[0],1)), num_classes=4)
-    
-    data['showers'].append(npShowers)
-    data['energies'].append(npEnergies)
-    data['layers'].append(npGaps)
-    data['pid'].append(pid)
-    #data['gap_pid'].append(gap_pid) #TODO ignoring for now
+    # if histogram: 
 
-    if histogram: 
+    #   nparts_all["e-"] = nparts_all_e
+    #   nparts_all["mu-"] = nparts_all_mu 
+    #   nparts_all["gamma"] = nparts_all_gamma
+    #   nparts_all["neutron"] = nparts_all_neutron
+    #   nparts_all["proton"] = nparts_all_proton
+    #   nparts_all["pi+"] = nparts_all_pi
+    #   nparts_all["kaon0L"] = nparts_all_kaon
 
-      nparts_all["e-"] = nparts_all_e
-      nparts_all["mu-"] = nparts_all_mu 
-      nparts_all["gamma"] = nparts_all_gamma
-      nparts_all["neutron"] = nparts_all_neutron
-      nparts_all["proton"] = nparts_all_proton
-      nparts_all["pi+"] = nparts_all_pi
-      nparts_all["kaon0L"] = nparts_all_kaon
-
-      with open('nparts_all_dict.pkl', 'wb') as f:
-        pickle.dump(nparts_all, f)
+      # with open(f'{folder_path_root}all_data_dict_sep4_2025.pkl', 'wb') as f:
+      #   pickle.dump(data, f)
       
-    with open('all_g4_data.pkl', 'wb') as f:
-        pickle.dump(data, f)  
+    # with open('all_g4_data.pkl', 'wb') as f:
+    #     pickle.dump(data, f)  
     print(f"Total non-empty files processed: {NonEmpty}")
-    return data
+    #return data
     
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Plot GEANT4 root output file')
 
-    parser.add_argument('--in-file', '-i', action="store", default='../data_generated_point_clouds1/',
+    parser.add_argument('--in-file', '-i', action="store", default='/pscratch/sd/c/ccardona/datasets/data_generated_point_clouds/',
                         help='input ROOT file') #requiered=True,
-    parser.add_argument('--dataoutfile', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets',
+    parser.add_argument('--out-file', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl',
                         help='output hf5 data file') #requiered=True,
     
     args = parser.parse_args()
 
     #plots(args.in_file)
-    data = read_data_g4(args.in_file, histogram=True)
+    #data = read_data_g4(args.in_file, histogram=False)
+    read_data_g4(args.in_file, args.out_file, histogram=False)
 
-    with h5.File('{}/all_sims_{}.h5'.format(args.dataoutfile, 'G4'), "w") as fh5:
-        dset = fh5.create_dataset('showers', data=data['showers']) # Analogous to particles
-        dset = fh5.create_dataset('energies', data=data['energies']) 
-        dset = fh5.create_dataset('pid', data=data['pid']) 
-        dset = fh5.create_dataset('layers', data=data['layers']) # analogous to jets
+    # with open('{}/all_sims_dict{}.pkl'.format(args.dataoutfile, 'G4_test'), 'wb') as f:
+    #     pickle.dump(data, f)
+
+
+    # with h5.File('{}/all_sims_{}.h5'.format(args.dataoutfile, 'G4'), "w") as fh5:
+    #     dset = fh5.create_dataset('showers', data=data['showers']) # Analogous to particles
+    #     dset = fh5.create_dataset('energies', data=data['energies']) 
+    #     dset = fh5.create_dataset('pid', data=data['pid']) 
+    #     dset = fh5.create_dataset('global', data=data['global']) # analogous to jets
 

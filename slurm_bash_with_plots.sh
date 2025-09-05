@@ -29,7 +29,7 @@ else
     absorbers=("G4_Pb" "G4_W" "G4_U" "G4_Cu" "brass" "StainlessSteel")
     # Gaps liquidArgon, liquidXenon, Scintillator, Silicon
     gaps=("liquidArgon" "G4_lXe" "Scintillator" "G4_Si")
-    output_directory="../data_generated_point_clouds1/"
+    output_directory="/pscratch/sd/c/ccardona/datasets/data_generated_point_clouds/"
     nParticles=1000
 fi
 
