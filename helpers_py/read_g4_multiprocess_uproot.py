@@ -1,5 +1,4 @@
-#from ROOT import TFile,  TCanvas, TH1F, TH2F, gPad
-import ROOT
+import uproot
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from keras.utils import to_categorical
@@ -9,6 +8,9 @@ import os
 import h5py as h5
 import uproot
 import pickle
+from tqdm import tqdm
+from multiprocessing import Pool, cpu_count
+import itertools
 
 # particles=("e-" "mu-" "gamma" "neutron" "proton" "pi+" "kaon0L")
 # absorbers=("G4_Pb" "G4_W" "G4_U" "G4_Cu" "brass" "StainlessSteel")
@@ -98,73 +100,92 @@ def get_root_parent(filename):
     print(f"An error occurred: {e}")
     return None
 
-        
-    
-def read_root(file_path):
-    """Walks the ttree and extract data. each event is an individual particle. 
-    Retunrs a dict with key initialEnergy and value (x,y,z,Edep)"""
+def read_root_uproot(file_path):
+    """
+    Walks the TTree and extracts data using uproot.
+    Returns a dict with key initialEnergy and value (x, y, z, Edep).
+    """
+    #max_events = 999 
     particle_idx = file_path.find("genAi")
     parts_forlder_name = file_path[particle_idx:].split("_")
     if len(parts_forlder_name) >= 2:
       particle = parts_forlder_name[1]
     else:
-      particle = "" # Or handle the error as appropriate if there's no second underscore
-    root_file = ROOT.TFile(file_path, "READ")
-    #myfile = TFile("build/calogan.root")
-    tree = root_file.Get("StepData")
-
-    if not tree:
-        print(f"Error: TTree 'StepData' not found in file '{file_path}'")
-        exit()
-
-    # Create lists to store the data 
-    x_positions = []
-    y_positions = []
-    z_positions = []
-    energy_depositions= []
-    initial_energies = []
-    events = {} # dict holding event data. keys (initialEnergy: value (x,y,z,Edep)
-    #TODO: particle name might  go into the h5 file, so will use an h5 per particle as in jetnet
-    gaps = []
-    # Loop over the entries in the TTree
-    n = 0
-    for event in tree:
-        n+=1
-        _Ienergy = event.InitialEnergy
-        gap = event.VolumeGap
-        gaps.append(gap)
-        if _Ienergy !=0:
-          initial_energies.append(_Ienergy)
-        if len(initial_energies) == 1:
-          if gap != 0:
-              x_positions.append(event.position_x)
-              y_positions.append(event.position_y)
-              z_positions.append(event.position_z)
-              energy_depositions.append(event.EnergyDep)
-        else:
-          Ienergy = initial_energies.pop(0)
-          events[Ienergy]=(x_positions, y_positions, z_positions, energy_depositions)
-          x_positions = []
-          y_positions = []
-          z_positions = []
-          energy_depositions= []
+      particle = ""
+      
+    try:
+        with uproot.open(f"{file_path}:StepData") as tree:
+            branches_to_read = [
+                "InitialEnergy",
+                "VolumeGap",
+                "position_x",
+                "position_y",
+                "position_z",
+                "EnergyDep"
+            ]
             
-  # Close the ROOT file
-    root_file.Close()
-    return particle, events
+            # Read all required branches into NumPy arrays
+            data = tree.arrays(branches_to_read, library="np")
 
-# ... (existing imports, labels, etc. remain unchanged) ...
+            # Extract numpy arrays from the dictionary
+            initial_energies = data["InitialEnergy"]
+            gaps = data["VolumeGap"]
+            x_positions = data["position_x"]
+            y_positions = data["position_y"]
+            z_positions = data["position_z"]
+            energy_depositions = data["EnergyDep"]
 
-def process_single_folder(folder_path_root, folder, out_path, max_particles= 1000):
+            # Events dictionary to store the result
+            events = {}
+            current_energy = 0
+            current_event_data = []
+            event_count = 0
+            
+            # Group data by InitialEnergy
+            # A new event starts when InitialEnergy is non-zero
+            for i in range(len(initial_energies)):
+                print(f"Processing simulation {i+1}/{len(initial_energies)}", end='\r')
+                # Check for a new event (InitialEnergy > 0)
+                if initial_energies[i] > 0:
+                    # If this is not the first event, save the previous one
+                    if current_energy > 0:
+                        events[current_energy] = np.array(current_event_data).T
+                        event_count += 1
+                    
+                    # Start a new event
+                    current_energy = initial_energies[i]
+                    current_event_data = []
+
+                # Collect data for the current event
+                if gaps[i] != 0:
+                    current_event_data.append([
+                        x_positions[i],
+                        y_positions[i],
+                        z_positions[i],
+                        energy_depositions[i]
+                    ])
+
+                # Break the loop if the maximum number of events is reached
+                # if event_count >= max_events:
+                #     break
+
+            # Save the last event
+            if current_energy > 0:
+                events[current_energy] = np.array(current_event_data).T
+            
+            return particle, events
+            
+    except Exception as e:
+        print(f"An error occurred while reading {file_path}: {e}")
+        return particle, {}
+
+def process_single_folder(folder_info):
     """
     Processes a single folder to extract and save simulation data.
     """
+    folder_path_root, folder, out_path, max_particles = folder_info
     
     # create a data dict for each folder, i.e, each simulation
-    all_showers = []
-    all_energies = []
-    all_gaps = []
-    
     data = {
         'showers': [],
         'energies': [],
@@ -200,17 +221,24 @@ def process_single_folder(folder_path_root, folder, out_path, max_particles= 100
                 print(f"Warning: Missing labels for particle '{particle}' or gap '{gap}'. Skipping.")
                 return 0
 
-            particleFromRoot, events = read_root(root_file_path)
+            # Call the new uproot function
+            particleFromRoot, events = read_root_uproot(root_file_path)
+          
             if particle != particleFromRoot:
                  print(f"Particle mismatch: folder has {particle}, root file has {particleFromRoot}. Skipping.")
                  return 0
 
+            all_showers = []
+            all_energies = []
             for energy, feats in events.items():
-                feature = np.array(feats).T
-                feature_padded = _pad(feature, max_particles=max_particles)
+                feature_padded = _pad(feats, max_particles=max_particles)
                 all_showers.append(feature_padded)
                 all_energies.append(np.float32(energy))
             
+            if not all_showers:
+                print(f"No events found in {root_file_path}. Skipping.")
+                return 0
+
             npShowers = np.array(all_showers, dtype=np.float32)
             npEnergies = np.array(all_energies, dtype=np.float32)
 
@@ -233,11 +261,7 @@ def process_single_folder(folder_path_root, folder, out_path, max_particles= 100
     
     return 0 # Return 0 for a failed or skipped processing
 
-from multiprocessing import Pool, cpu_count
-
-# ... (rest of the script) ...
-
-def read_data_g4_parallel(folder_path_root, out_path):
+def read_data_g4_parallel(folder_path_root, out_path, max_particles=1000):
     """Walks through the root files and processes them in parallel."""
     
     # Get the list of folders
@@ -248,7 +272,7 @@ def read_data_g4_parallel(folder_path_root, out_path):
     print(f"Using {num_processes} processes to speed up data loading.")
 
     # Prepare a list of tuples with all arguments for the worker function
-    tasks = [(folder, folder_path_root, out_path) for folder in folder_list]
+    tasks = [(folder_path_root, folder, out_path, max_particles) for folder in folder_list]
     
     # Create a multiprocessing pool
     with Pool(processes=num_processes) as pool:
@@ -274,5 +298,3 @@ if __name__ == '__main__':
 
     # Call the new parallel function
     read_data_g4_parallel(args.in_file, args.out_file)
-
-

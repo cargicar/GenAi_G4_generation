@@ -1,8 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=genai_datageneration
+#SBATCH --job-name=read_data_generation
 #SBATCH --nodes=1
-#SBATCH --ntasks=1 # Request one task per item in the list
-#SBATCH --cpus-per-task=1  # Or more if ./a.out can use them
 #SBATCH --time=10:00:00
 #SBATCH --constraint=cpu
 #SBATCH --mem=32GB
@@ -14,7 +12,7 @@
 module load conda
 conda activate g4plots
 
-srun -n 1  python helpers_py/read_g4_data.py
+srun -n 1  python helpers_py/read_g4_data.py 
 
 echo "All  completed."
 echo "End of script."
