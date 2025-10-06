@@ -272,6 +272,8 @@ if __name__ == '__main__':
     parser.add_argument('--out-file', '-o', action="store",
                         default='/pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl',
                         help='output hf5 data file') 
+    parser.add_argument("--max_particles",type=int, default=1000, help="Max number of particles to keep per shower")
+
     parser.add_argument(
         "--val",
         type=bool,
@@ -282,4 +284,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Call the new sequential function
-    read_data_g4(args.in_file, args.out_file, val = args.val)
+    read_data_g4(args.in_file, args.out_file, val = args.val, max_particles=args.max_particles)
