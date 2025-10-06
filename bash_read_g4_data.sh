@@ -12,7 +12,7 @@
 module load conda
 conda activate g4plots
 
-srun -n 1  python helpers_py/read_g4_data.py 
-
+#srun -n 1  python helpers_py/read_g4_data.py 
+srun -n 1 python helpers_py/read_g4_data.py -i /pscratch/sd/c/ccardona/datasets/data_generated_val/genAi_e-_G4_Cu_liquidArgon -o /pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl_val/ --val True
 echo "All  completed."
 echo "End of script."

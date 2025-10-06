@@ -105,7 +105,7 @@ def get_root_parent(filename):
         return None
 
 
-def read_root(file_path):
+def read_root(file_path, val = False):
     """Walks the ttree and extract data. each event is an individual particle.
     Retunrs a dict with key initialEnergy and value (x,y,z,Edep)"""
     # FIXME Put a cap in the max number of simulations cause I was running out of time in perlmutter
@@ -153,6 +153,8 @@ def read_root(file_path):
             else:
                 m += 1
                 Ienergy = initial_energies.pop(0)
+                if val:
+                    Ienergy = Ienergy+ m*0.01 # use a different key for event dict, even tho all primary energies are the same in val    
                 events[Ienergy] = (x_positions, y_positions, z_positions, energy_depositions)
                 x_positions = []
                 y_positions = []
@@ -172,7 +174,7 @@ def process_single_folder(folder_info):
     """
     Processes a single folder to extract and save simulation data.
     """
-    folder_path_root, folder, out_path, max_particles = folder_info
+    folder_path_root, folder, out_path, max_particles, val = folder_info
     # create a data dict for each folder, i.e, each simulation
     all_showers = []
     all_energies = []
@@ -194,27 +196,27 @@ def process_single_folder(folder_info):
         return 0
 
     trees, keys = tress_and_keys(root_file_path)
-
+    folder_cfg = folder # the file name contating the simulation config values
+    if val:
+        folder_cfg = folder_path_root[52:] #FIXME position of str genAi harcoded. the file name contating the simulation config values. 
     if trees is not None:
         # Extract particle and gap info from folder name
         try:
-            sepIdx = [index for index, char in enumerate(folder) if char == '_']
-            particle = folder[sepIdx[0] + 1:sepIdx[1]]
-            if len(sepIdx) > 2 and "G4" in folder[sepIdx[1] + 1:sepIdx[2]]:
-                gap = folder[sepIdx[3] + 1:]
+            sepIdx = [index for index, char in enumerate(folder_cfg) if char == '_']
+            particle = folder_cfg[sepIdx[0] + 1:sepIdx[1]]
+            if len(sepIdx) > 2 and "G4" in folder_cfg[sepIdx[1] + 1:sepIdx[2]]:
+                gap = folder_cfg[sepIdx[3] + 1:]
             else:
-                gap = folder[sepIdx[2] + 1:]
+                gap = folder_cfg[sepIdx[2] + 1:]
 
             # --- The core processing logic from your original `read_data_g4` function ---
             print(f"Processing file: {root_file_path} with particle: {particle}, gap: {gap}")
-
             # Ensure particle and gap labels exist before proceeding
             if particle not in particle_labels or gap not in gap_labels:
                 print(f"Warning: Missing labels for particle '{particle}' or gap '{gap}'. Skipping.")
                 return 0
 
-            particleFromRoot, events = read_root(root_file_path)
-
+            particleFromRoot, events = read_root(root_file_path, val = val)
             if particle != particleFromRoot:
                 print(f"Particle mismatch: folder has {particle}, root file has {particleFromRoot}. Skipping.")
                 return 0
@@ -234,7 +236,6 @@ def process_single_folder(folder_info):
             data['energies'].append(npEnergies)
             data['gap_pid'].append(gap_pid)
             data['pid'].append(pid)
-
             with open(output_pkl_path, 'wb') as f:
                 pickle.dump(data, f)
 
@@ -247,16 +248,15 @@ def process_single_folder(folder_info):
     return 0  # Return 0 for a failed or skipped processing
 
 
-def read_data_g4(folder_path_root, out_path, max_particles=1000):
+def read_data_g4(folder_path_root, out_path, max_particles=1000, val = False):
     """Walks through the root files and processes them sequentially."""
 
     # Get the list of folders
     folder_list = os.listdir(folder_path_root)
     non_empty_count = 0
-
     # Process each folder one by one
     for folder in tqdm(folder_list, desc="Processing folders"):
-        folder_info = (folder_path_root, folder, out_path, max_particles)
+        folder_info = (folder_path_root, folder, out_path, max_particles, val)
         result = process_single_folder(folder_info)
         non_empty_count += result
 
@@ -268,12 +268,18 @@ if __name__ == '__main__':
     # ... (existing argparse arguments) ...
     parser.add_argument('--in-file', '-i', action="store",
                         default='/pscratch/sd/c/ccardona/datasets/data_generated_point_clouds/',
-                        help='input ROOT file')  # requiered=True,
+                        help='input ROOT file') 
     parser.add_argument('--out-file', '-o', action="store",
                         default='/pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl',
-                        help='output hf5 data file')  # requiered=True,
+                        help='output hf5 data file') 
+    parser.add_argument(
+        "--val",
+        type=bool,
+        default=False,
+        help="Whether read multi-single simulation for validation histograms",
+    )
 
     args = parser.parse_args()
 
     # Call the new sequential function
-    read_data_g4(args.in_file, args.out_file)
+    read_data_g4(args.in_file, args.out_file, val = args.val)
