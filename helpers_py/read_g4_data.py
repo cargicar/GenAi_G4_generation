@@ -109,7 +109,7 @@ def read_root(file_path, val = False):
     """Walks the ttree and extract data. each event is an individual particle.
     Retunrs a dict with key initialEnergy and value (x,y,z,Edep)"""
     # FIXME Put a cap in the max number of simulations cause I was running out of time in perlmutter
-    max_events = 999
+    max_events = 999999
     particle_idx = file_path.find("genAi")
     parts_forlder_name = file_path[particle_idx:].split("_")
     if len(parts_forlder_name) >= 2:

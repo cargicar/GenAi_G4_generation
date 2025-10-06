@@ -290,11 +290,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Plot GEANT4 root output file')
     # ... (existing argparse arguments) ...
     parser.add_argument('--in-file', '-i', action="store", default='/pscratch/sd/c/ccardona/datasets/data_generated_point_clouds/',
-                        help='input ROOT file') #requiered=True,
+                        help='input ROOT file')
     parser.add_argument('--out-file', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl',
-                        help='output hf5 data file') #requiered=True,
+                        help='output hf5 data file') 
+    parser.add_argument("--max_particles",type=int, default=1000, help="Max number of particles to keep per shower")
 
     args = parser.parse_args()
 
     # Call the new parallel function
-    read_data_g4_parallel(args.in_file, args.out_file)
+    read_data_g4_parallel(args.in_file, args.out_file, max_particles=args.max_particles)
