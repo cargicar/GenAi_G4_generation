@@ -58,6 +58,7 @@ def _pad(Nparticles, max_particles=50):
         stack = np.vstack([Nparticles, padding])
         return stack
     else:
+        print(f"Truncating from {Nparticles.shape[0]} to {max_particles} particles")
         x = Nparticles[:max_particles]
         return x
 
@@ -100,19 +101,97 @@ def get_root_parent(filename):
     print(f"An error occurred: {e}")
     return None
 
+# def read_root_uproot(file_path):
+#     """
+#     Walks the TTree and extracts data using uproot.
+#     Returns a dict with key initialEnergy and value (x, y, z, Edep).
+#     """
+#     #max_events = 999 
+#     particle_idx = file_path.find("genAi")
+#     parts_forlder_name = file_path[particle_idx:].split("_")
+#     if len(parts_forlder_name) >= 2:
+#       particle = parts_forlder_name[1]
+#     else:
+#       particle = ""
+      
+#     try:
+#         with uproot.open(f"{file_path}:StepData") as tree:
+#             branches_to_read = [
+#                 "InitialEnergy",
+#                 "VolumeGap",
+#                 "position_x",
+#                 "position_y",
+#                 "position_z",
+#                 "EnergyDep"
+#             ]
+            
+#             # Read all required branches into NumPy arrays
+#             data = tree.arrays(branches_to_read, library="np")
+
+#             # Extract numpy arrays from the dictionary
+#             initial_energies = data["InitialEnergy"]
+#             gaps = data["VolumeGap"]
+#             x_positions = data["position_x"]
+#             y_positions = data["position_y"]
+#             z_positions = data["position_z"]
+#             energy_depositions = data["EnergyDep"]
+
+#             # Events dictionary to store the result
+#             events = {}
+#             current_energy = 0
+#             current_event_data = []
+#             event_count = 0
+            
+#             # Group data by InitialEnergy
+#             # A new event starts when InitialEnergy is non-zero
+#             for i in range(len(initial_energies)):
+#                 print(f"Processing simulation {i+1}/{len(initial_energies)}", end='\r')
+#                 # Check for a new event (InitialEnergy > 0)
+#                 if initial_energies[i] > 0:
+#                     # If this is not the first event, save the previous one
+#                     if current_energy > 0:
+#                         events[current_energy] = np.array(current_event_data).T
+#                         event_count += 1
+                    
+#                     # Start a new event
+#                     current_energy = initial_energies[i]
+#                     current_event_data = []
+
+#                 # Collect data for the current event
+#                 if gaps[i] != 0:
+#                     current_event_data.append([
+#                         x_positions[i],
+#                         y_positions[i],
+#                         z_positions[i],
+#                         energy_depositions[i]
+#                     ])
+
+#                 # Break the loop if the maximum number of events is reached
+#                 # if event_count >= max_events:
+#                 #     break
+
+#             # Save the last event
+#             if current_energy > 0:
+#                 events[current_energy] = np.array(current_event_data).T
+            
+#             return particle, events
+            
+#     except Exception as e:
+#         print(f"An error occurred while reading {file_path}: {e}")
+#         return particle, {}
+    
 def read_root_uproot(file_path):
     """
-    Walks the TTree and extracts data using uproot.
+    Reads data in chunks using uproot.iterate() to avoid massive memory blocks.
     Returns a dict with key initialEnergy and value (x, y, z, Edep).
     """
-    #max_events = 999 
+    # ... (extract particle name from file_path as before) ...
+    particle = "" 
     particle_idx = file_path.find("genAi")
     parts_forlder_name = file_path[particle_idx:].split("_")
     if len(parts_forlder_name) >= 2:
       particle = parts_forlder_name[1]
-    else:
-      particle = ""
-      
+    
     try:
         with uproot.open(f"{file_path}:StepData") as tree:
             branches_to_read = [
@@ -124,53 +203,48 @@ def read_root_uproot(file_path):
                 "EnergyDep"
             ]
             
-            # Read all required branches into NumPy arrays
-            data = tree.arrays(branches_to_read, library="np")
-
-            # Extract numpy arrays from the dictionary
-            initial_energies = data["InitialEnergy"]
-            gaps = data["VolumeGap"]
-            x_positions = data["position_x"]
-            y_positions = data["position_y"]
-            z_positions = data["position_z"]
-            energy_depositions = data["EnergyDep"]
-
-            # Events dictionary to store the result
             events = {}
             current_energy = 0
             current_event_data = []
-            event_count = 0
             
-            # Group data by InitialEnergy
-            # A new event starts when InitialEnergy is non-zero
-            for i in range(len(initial_energies)):
-                print(f"Processing simulation {i+1}/{len(initial_energies)}", end='\r')
-                # Check for a new event (InitialEnergy > 0)
-                if initial_energies[i] > 0:
-                    # If this is not the first event, save the previous one
-                    if current_energy > 0:
-                        events[current_energy] = np.array(current_event_data).T
-                        event_count += 1
-                    
-                    # Start a new event
-                    current_energy = initial_energies[i]
-                    current_event_data = []
+            # --- THE IMPROVEMENT: Use tree.iterate() ---
+            # Set step_size to a reasonable number (e.g., 500,000 entries)
+            # This returns an iterator that yields dictionaries of NumPy arrays (one for each chunk/basket)
+            for data in tree.iterate(branches_to_read, library="np", step_size="500 MB"):
+                
+                # Extract numpy arrays from the dictionary for the current chunk
+                initial_energies = data["InitialEnergy"]
+                gaps = data["VolumeGap"]
+                x_positions = data["position_x"]
+                y_positions = data["position_y"]
+                z_positions = data["position_z"]
+                energy_depositions = data["EnergyDep"]
+                
+                # The core logic to group steps into events remains the same, 
+                # but now it operates within the chunk/basket
+                for i in range(len(initial_energies)):
+                    # Check for a new event (InitialEnergy > 0)
+                    if initial_energies[i] > 0:
+                        # If this is not the first event, save the previous one
+                        if current_energy > 0 and current_event_data:
+                            # Concatenate the current event data and store it
+                            events[current_energy] = np.array(current_event_data).T
+                            
+                        # Start a new event
+                        current_energy = initial_energies[i]
+                        current_event_data = []
 
-                # Collect data for the current event
-                if gaps[i] != 0:
-                    current_event_data.append([
-                        x_positions[i],
-                        y_positions[i],
-                        z_positions[i],
-                        energy_depositions[i]
-                    ])
-
-                # Break the loop if the maximum number of events is reached
-                # if event_count >= max_events:
-                #     break
-
-            # Save the last event
-            if current_energy > 0:
+                    # Collect data for the current event only if it's in a gap
+                    if gaps[i] != 0:
+                        current_event_data.append([
+                            x_positions[i],
+                            y_positions[i],
+                            z_positions[i],
+                            energy_depositions[i]
+                        ])
+            
+            # After iterating through all chunks, save the very last event
+            if current_energy > 0 and current_event_data:
                 events[current_energy] = np.array(current_event_data).T
             
             return particle, events
@@ -183,7 +257,7 @@ def process_single_folder(folder_info):
     """
     Processes a single folder to extract and save simulation data.
     """
-    folder_path_root, folder, out_path, max_particles = folder_info
+    folder_path_root, folder, out_path, max_particles, pad = folder_info
     
     # create a data dict for each folder, i.e, each simulation
     data = {
@@ -231,8 +305,11 @@ def process_single_folder(folder_info):
             all_showers = []
             all_energies = []
             for energy, feats in events.items():
-                feature_padded = _pad(feats, max_particles=max_particles)
-                all_showers.append(feature_padded)
+                feats = np.array(feats).T
+                if pad:
+                    #print(f"pad {pad} max_particles {max_particles}")
+                    feats = _pad(feats, max_particles=max_particles)
+                all_showers.append(feats)
                 all_energies.append(np.float32(energy))
             
             if not all_showers:
@@ -261,41 +338,44 @@ def process_single_folder(folder_info):
     
     return 0 # Return 0 for a failed or skipped processing
 
-def read_data_g4_parallel(folder_path_root, out_path, max_particles=1000):
+def read_data_g4_parallel(folder_path_root, out_path, max_particles=1000, pad = True ):
     """Walks through the root files and processes them in parallel."""
-    
     # Get the list of folders
     folder_list = os.listdir(folder_path_root)
-    
+    total_folders = len(folder_list)
     # Get the number of available CPU cores
     num_processes = cpu_count()
+    num_processes = 8 # Limit to 4 processes for debug
     print(f"Using {num_processes} processes to speed up data loading.")
 
     # Prepare a list of tuples with all arguments for the worker function
-    tasks = [(folder_path_root, folder, out_path, max_particles) for folder in folder_list]
-    
+    tasks = [(folder_path_root, folder, out_path, max_particles, pad) for folder in folder_list]
+    non_empty_count = 0
     # Create a multiprocessing pool
     with Pool(processes=num_processes) as pool:
         # Map the worker function to the list of tasks
-        results = pool.map(process_single_folder, tasks)
+        #results = pool.map(process_single_folder, tasks)
+        results_iterator = pool.imap_unordered(process_single_folder, tasks)
+        # Wrap the iterator with tqdm
+        for result in tqdm(results_iterator, total=total_folders, desc="Processing folders"):
+            non_empty_count += result
     
     # Count the number of successfully processed files
-    non_empty_count = sum(results)
+    #non_empty_count = sum(results)
     
     print(f"Total non-empty files processed: {non_empty_count}")
 
 # ... (rest of the script, including __main__ block) ...
-
-if __name__ == '__main__':
+def parse_args():
     parser = argparse.ArgumentParser(description='Plot GEANT4 root output file')
-    # ... (existing argparse arguments) ...
     parser.add_argument('--in-file', '-i', action="store", default='/pscratch/sd/c/ccardona/datasets/data_generated_point_clouds/',
                         help='input ROOT file')
     parser.add_argument('--out-file', '-o', action="store",  default='/pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl',
                         help='output hf5 data file') 
-    parser.add_argument("--max_particles",type=int, default=1000, help="Max number of particles to keep per shower")
+    parser.add_argument("--max_particles",type=int, default=100000, help="Max number of particles to keep per shower")
+    parser.add_argument("--pad", type=bool, default=True, help="Whether pad aor truncate the point clouds")
+    return parser.parse_args()
 
-    args = parser.parse_args()
-
-    # Call the new parallel function
-    read_data_g4_parallel(args.in_file, args.out_file, max_particles=args.max_particles)
+if __name__ == '__main__':
+    args = parse_args()
+    read_data_g4_parallel(args.in_file, args.out_file, max_particles=args.max_particles, pad = args.pad)

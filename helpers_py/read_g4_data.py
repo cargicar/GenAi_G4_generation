@@ -1,8 +1,5 @@
 # from ROOT import TFile, TCanvas, TH1F, TH2F, gPad
 import ROOT
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from keras.utils import to_categorical
 import numpy as np
 import argparse
 import os
@@ -45,7 +42,6 @@ detector_geometry = {
     "gap_thick": 4,  # mm
     "YZ_size": 120,  # cm
 }
-
 
 def _pad(Nparticles, max_particles=50):
     """Pads or truncates the list of particles to ensure a fixed length.
@@ -105,7 +101,7 @@ def get_root_parent(filename):
         return None
 
 
-def read_root(file_path, val = False):
+def read_root(file_path):
     """Walks the ttree and extract data. each event is an individual particle.
     Retunrs a dict with key initialEnergy and value (x,y,z,Edep)"""
     # FIXME Put a cap in the max number of simulations cause I was running out of time in perlmutter
@@ -153,8 +149,8 @@ def read_root(file_path, val = False):
             else:
                 m += 1
                 Ienergy = initial_energies.pop(0)
-                if val:
-                    Ienergy = Ienergy+ m*0.01 # use a different key for event dict, even tho all primary energies are the same in val    
+                # if val:
+                #     Ienergy = Ienergy+ m*0.01 # use a different key for event dict, even tho all primary energies are the same in val    
                 events[Ienergy] = (x_positions, y_positions, z_positions, energy_depositions)
                 x_positions = []
                 y_positions = []
@@ -174,7 +170,7 @@ def process_single_folder(folder_info):
     """
     Processes a single folder to extract and save simulation data.
     """
-    folder_path_root, folder, out_path, max_particles, val = folder_info
+    folder_path_root, folder, out_path, max_particles, pad = folder_info
     # create a data dict for each folder, i.e, each simulation
     all_showers = []
     all_energies = []
@@ -197,8 +193,8 @@ def process_single_folder(folder_info):
 
     trees, keys = tress_and_keys(root_file_path)
     folder_cfg = folder # the file name contating the simulation config values
-    if val:
-        folder_cfg = folder_path_root[52:] #FIXME position of str genAi harcoded. the file name contating the simulation config values. 
+    # if val:
+    #     folder_cfg = folder_path_root[52:] #FIXME position of str genAi harcoded. the file name contating the simulation config values. 
     if trees is not None:
         # Extract particle and gap info from folder name
         try:
@@ -216,15 +212,17 @@ def process_single_folder(folder_info):
                 print(f"Warning: Missing labels for particle '{particle}' or gap '{gap}'. Skipping.")
                 return 0
 
-            particleFromRoot, events = read_root(root_file_path, val = val)
+            particleFromRoot, events = read_root(root_file_path)
             if particle != particleFromRoot:
                 print(f"Particle mismatch: folder has {particle}, root file has {particleFromRoot}. Skipping.")
                 return 0
 
             for energy, feats in events.items():
                 feature = np.array(feats).T
-                feature_padded = _pad(feature, max_particles=max_particles)
-                all_showers.append(feature_padded)
+                if pad:
+                    print(f"pad {pad} max_particles {max_particles}")
+                    feature = _pad(feature, max_particles=max_particles)
+                all_showers.append(feature)
                 all_energies.append(np.float32(energy))
             npShowers = np.array(all_showers, dtype=np.float32)
             npEnergies = np.array(all_energies, dtype=np.float32)
@@ -248,7 +246,7 @@ def process_single_folder(folder_info):
     return 0  # Return 0 for a failed or skipped processing
 
 
-def read_data_g4(folder_path_root, out_path, max_particles=1000, val = False):
+def read_data_g4(folder_path_root, out_path, max_particles=1000, pad = True):
     """Walks through the root files and processes them sequentially."""
 
     # Get the list of folders
@@ -256,7 +254,7 @@ def read_data_g4(folder_path_root, out_path, max_particles=1000, val = False):
     non_empty_count = 0
     # Process each folder one by one
     for folder in tqdm(folder_list, desc="Processing folders"):
-        folder_info = (folder_path_root, folder, out_path, max_particles, val)
+        folder_info = (folder_path_root, folder, out_path, max_particles, pad)
         result = process_single_folder(folder_info)
         non_empty_count += result
 
@@ -273,15 +271,9 @@ if __name__ == '__main__':
                         default='/pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl',
                         help='output hf5 data file') 
     parser.add_argument("--max_particles",type=int, default=1000, help="Max number of particles to keep per shower")
-
-    parser.add_argument(
-        "--val",
-        type=bool,
-        default=False,
-        help="Whether read multi-single simulation for validation histograms",
-    )
+    parser.add_argument("--pad", type=bool, default=True, help="Whether pad aor truncate the point clouds")
 
     args = parser.parse_args()
 
     # Call the new sequential function
-    read_data_g4(args.in_file, args.out_file, val = args.val, max_particles=args.max_particles)
+    read_data_g4(args.in_file, args.out_file, max_particles=args.max_particles, pad= args.pad)

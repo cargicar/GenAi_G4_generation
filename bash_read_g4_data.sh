@@ -1,8 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=read_data_generation
 #SBATCH --nodes=1
+#SBATCH --ntasks=1
 #SBATCH --time=10:00:00
 #SBATCH --constraint=cpu
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=32GB
 #SBATCH --qos=regular # or qos=debug
 #SBATCH --account=m3246
@@ -13,6 +15,7 @@ module load conda
 conda activate g4plots
 
 #srun -n 1  python helpers_py/read_g4_data.py 
-srun -n 1 python helpers_py/read_g4_data.py -i /pscratch/sd/c/ccardona/datasets/data_generated_val/genAi_e-_G4_Cu_liquidArgon -o /pscratch/sd/c/ccardona/datasets/G4_individual_sims_pkl_val/ --val True
+echo "Total allocated CPUs: $SLURM_CPUS_ON_NODE"
+srun -n 1 python helpers_py/read_g4_multiprocess_uproot.py --pad False
 echo "All  completed."
 echo "End of script."
