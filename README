@@ -1,6 +1,13 @@
 $Id: README,v 1.20 2010-12-01 05:55:04 allison Exp $
 -------------------------------------------------------------------
 
+Interactive:
+shifter --image=docker:geant4/geant4:latest --env-file=datasets.env /bin/bash
+ccmake -S . -B build
+cmake --build build -- -j 8
+cd build/generation
+./generation ../macros/run1.mac
+
      =========================================================
      Geant4 - an Object-Oriented Toolkit for Simulation in HEP
      =========================================================

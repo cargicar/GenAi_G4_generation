@@ -8,7 +8,7 @@
 #include <numeric>
 #include <TString.h>
 
-// A structure to hold the data for a single point (step)
+
 struct StepData {
     Float_t position_x;
     Float_t position_y;
@@ -16,7 +16,7 @@ struct StepData {
     Float_t EnergyDep;
 };
 
-// Map to store the final grouped data: InitialEnergy -> vector of Steps
+// data: InitialEnergy -> vector of Steps
 std::map<Float_t, std::vector<StepData>> events_map;
 
 void read_root_cpp(const std::string& file_path, std::string& particle_name) {

@@ -26,11 +26,11 @@ else
     #particles=("e-" "e+" "mu-" "mu+" "tau-" "tau+" "nu_e" "anti_nu_e" "nu_mu" "anti_nu_mu" "nu_tau" "anti_nu_tau" "p+" "n0" "pi+" "pi-" "pi0" "kaon+" "kaon-" "kaon0S" "lambda" "d")
     particles=("e-") 
     # Materials
-    absorbers=("G4_Cu")
+    absorbers=("brass")
     # Gaps liquidArgon, liquidXenon, Scintillator, Silicon
     gaps=("liquidArgon")
-    output_directory="/pscratch/sd/c/ccardona/datasets/data_generated_val/"
-    nParticles=1000
+    output_directory="/pscratch/sd/c/ccardona/datasets/data_generated_pc_e_liquidArgon_energ_50/"
+    nParticles=3000
 fi
 
 mkdir -p "$output_directory"
@@ -50,75 +50,60 @@ fi
 
 # Energy
 min_e=50
-max_e=50
+max_e=51
 if $simulation; then
-    echo "Simulation mode is ON. Running Geant4 simulations."
-    for particle in "${particles[@]}"; do
-        for abso in "${absorbers[@]}"; do
-            for gap in "${gaps[@]}"; do
-                
-                # --- NEW LOOP ADDED HERE ---
-                # Loop 1000 times to run the simulation 1000 times
-                for run_i in {1..1000}; do
+  echo "Simulation mode is ON. Running Geant4 simulations."
+  for particle in "${particles[@]}"; do
+    for abso in "${absorbers[@]}"; do
+      for gap in "${gaps[@]}"; do
+        n=$((n+1))
+        #folder_name="${output_directory}genAi_${particle//+/plus//-/minus//0/zero}_${abso}_${gap}"
+        folder_name="${output_directory}genAi_${particle}_${abso}_${gap}"
+        mkdir -p "$folder_name"
+        mac_file="${folder_name}/genAi_${particle}_${abso}_${gap}.mac"
+        #stdout_file="${folder_name}/genAi_${particle//+/plus//-/minus//0/zero}_${abso}_${gap}.txt"
+        stdout_file="${folder_name}/genAi_${particle}_${abso}_${gap}.txt"
+        export GAN_FNAME="${folder_name}/generated_calo.root"
+        echo "Run. Creating Macro File for this run"
 
-                    n=$((n+1))
-                    
-                    # NOTE: We need a unique folder/file name for each run. 
-                    # Use a combination of the parameters and the run index ($run_i).
-                    
-                    # Create a unique subfolder for this run
-                    folder_name="${output_directory}genAi_${particle}_${abso}_${gap}/run_${run_i}"
-                    mkdir -p "$folder_name"
-                    
-                    # Define unique file names
-                    mac_file="${folder_name}/run_${run_i}.mac"
-                    stdout_file="${folder_name}/run_${run_i}.txt"
-                    
-                    # Set the output ROOT file for this specific run
-                    export GAN_FNAME="${folder_name}/generated_calo.root"
-                    
-                    echo "Run ${run_i}. Creating Macro File for this run"
-
-                    # Macro file content remains the same, running nParticles (1000) events
-                    cat > "$mac_file" <<EOF
-/N03/det/setNbOfLayers $nLayers
-/N03/det/setAbsMat "$abso"
-/N03/det/setAbsThick  ${abso_thick} mm
-/N03/det/setGapMat "$gap"
-/N03/det/setGapThick ${gap_thick} mm
-/N03/det/setSizeYZ  ${YZ_size} cm
-/N03/det/update
-/run/initialize
-/run/printProgress 1
-/run/verbose 2
-/gps/particle $particle
-/gps/pos/type Beam
-/gps/pos/centre -30.0 0.0 0.0
-/gps/direction 1 0 0
-/gps/ene/type Lin
-/gps/ene/min ${min_e} GeV
-/gps/ene/max ${max_e} GeV
-/gps/ene/gradient 0.
-/gps/ene/intercept 1
-/gps/number 1
-/run/beamOn $nParticles
+        cat > "$mac_file" <<EOF
+  /N03/det/setNbOfLayers $nLayers
+  /N03/det/setAbsMat "$abso"
+  /N03/det/setAbsThick  ${abso_thick} mm
+  /N03/det/setGapMat "$gap"
+  /N03/det/setGapThick ${gap_thick} mm
+  /N03/det/setSizeYZ  ${YZ_size} cm
+  /N03/det/update
+  /run/initialize
+  /run/printProgress 1
+  /run/verbose 2
+  /gps/particle $particle
+  /gps/pos/type Beam
+  /gps/pos/centre -30.0 0.0 0.0
+  /gps/direction 1 0 0
+  /gps/ene/type Lin
+  /gps/ene/min ${min_e} GeV
+  /gps/ene/max ${max_e} GeV
+  /gps/ene/gradient 0.
+  /gps/ene/intercept 1
+  /gps/number 1
+  /run/beamOn $nParticles
 EOF
 
-                    echo "mac_file $mac_file"
-                    echo "Running Geant4 simulation for run ${run_i}"
-                    echo "Outputfiles to be store in '$folder_name' directory."
-                    
-                    # Execute the simulation and pipe output to the unique file
-                    srun -n 1  shifter  --env-file=datasets.env ./build/generation "$mac_file" &> "$stdout_file" &
-                    
-                    echo "Run ${run_i} Terminated!!"
-                    echo ""
-                done
-                # --- END OF NEW LOOP ---
-
-            done
-        done
+        echo "mac_file $mac_file"
+        echo ""
+        echo "Running Geant4 simulation"
+        echo "Outputfiles to be store in '$folder_name' directory."
+        srun -n 1  shifter  --env-file=datasets.env ./build/generation "$mac_file" &> "$stdout_file" &
+        echo "Run. Saving stdout and stderr"
+        #echo "Return Code: $?" > "$stdout_file"
+        #cat "$stdout_file"
+        echo ""
+        echo "Outputfiles created in the '$folder_name' directory."
+        echo "Run Terminated!!"
+      done
     done
+  done
   wait
 else
   echo "Simulation mode is OFF. Skipping Geant4 simulations."

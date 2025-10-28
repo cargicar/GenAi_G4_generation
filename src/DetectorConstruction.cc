@@ -241,6 +241,9 @@ brass->AddElement(elZn, 30.0*perCent);
 
 // Define Stainless Steel (e.g., SS304)
 G4double steelDensity = 8.00 * g/cm3;
+// Calculate the mass fraction (which you already did)
+G4double fe_mass_fraction = 1.0 - (0.0008 + 0.01 + 0.00045 + 0.0003 + 0.19 + 0.02 + 0.09);
+
 G4Material* steel = new G4Material("StainlessSteel", steelDensity, 8);
 steel->AddElement(elC, 0.0008);
 steel->AddElement(elSi, 0.01);
@@ -249,8 +252,9 @@ steel->AddElement(elS, 0.0003);
 steel->AddElement(elCr, 0.19);
 steel->AddElement(elMn, 0.02);
 steel->AddElement(elNi, 0.09);
-steel->AddElement(elFe, G4Element::GetElement("Fe")->GetZ(), 1.0 - (0.0008 + 0.01 + 0.00045 + 0.0003 + 0.19 + 0.02 + 0.09));
-
+//steel->AddElement(elFe, G4Element::GetElement("Fe")->GetZ(), 1.0 - (0.0008 + 0.01 + 0.00045 + 0.0003 + 0.19 + 0.02 + 0.09));
+// Add the element with only the mass fraction as the second argument
+steel->AddElement(elFe, fe_mass_fraction);
 
 // print table
 //

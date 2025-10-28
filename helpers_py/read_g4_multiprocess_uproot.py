@@ -1,16 +1,14 @@
 import uproot
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from keras.utils import to_categorical
+#import matplotlib.pyplot as plt
+#from mpl_toolkits.mplot3d import Axes3D
+#from keras.utils import to_categorical
 import numpy as np
 import argparse
 import os
-import h5py as h5
-import uproot
 import pickle
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
-import itertools
+#import itertools
 
 # particles=("e-" "mu-" "gamma" "neutron" "proton" "pi+" "kaon0L")
 # absorbers=("G4_Pb" "G4_W" "G4_U" "G4_Cu" "brass" "StainlessSteel")
@@ -345,7 +343,7 @@ def read_data_g4_parallel(folder_path_root, out_path, max_particles=1000, pad = 
     total_folders = len(folder_list)
     # Get the number of available CPU cores
     num_processes = cpu_count()
-    num_processes = 8 # Limit to 4 processes for debug
+    num_processes = 4 # Limit to 4 processes for debug
     print(f"Using {num_processes} processes to speed up data loading.")
 
     # Prepare a list of tuples with all arguments for the worker function
